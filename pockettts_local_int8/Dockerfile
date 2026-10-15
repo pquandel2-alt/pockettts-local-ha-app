@@ -55,7 +55,7 @@ LABEL io.hass.name="PocketTTS Local INT8" \
       io.hass.version="${BUILD_VERSION}"
 
 # Describe/Info round trip with at least one voice (not just an open port)
-HEALTHCHECK --start-period=180s --interval=30s --timeout=15s --retries=3 \
+HEALTHCHECK --start-period=120s --start-interval=3s --interval=30s --timeout=15s --retries=3 \
     CMD ["/opt/venv/bin/python", "-m", "pockettts_app.healthcheck"]
 
 ENTRYPOINT ["/opt/venv/bin/python", "-u", "-m", "pockettts_app"]

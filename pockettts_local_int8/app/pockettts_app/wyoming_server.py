@@ -157,6 +157,15 @@ async def warmup(synth, settings):
             except Exception as e:
                 log.warning("Warmup %s fehlgeschlagen (defekte Stimmdatei?): %r", v, e)
 
+class _StubHandler(AsyncEventHandler):
+    """Platzhalter, solange noch keine Modelle importiert sind: Port offen, Describe wird mit leerer Dienstliste beantwortet."""
+    async def handle_event(self, event: Event) -> bool:
+        if Describe.is_type(event.type): await self.write_event(Info(tts=[]).event())
+        return True
+
+async def run_stub(uri):
+    await AsyncServer.from_uri(uri).run(_StubHandler)
+
 async def serve(settings, uri, version):
     synth = Synth(settings)
     info = build_info(settings, version)

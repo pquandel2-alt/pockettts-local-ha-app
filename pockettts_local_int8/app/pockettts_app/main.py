@@ -7,9 +7,17 @@ log = logging.getLogger("app")
 VERSION = os.environ.get("APP_VERSION", "dev")
 WYOMING_PORT = int(os.environ.get("WYOMING_PORT", "10302"))
 
-HOWTO = ("Es sind noch keine Modelldateien vorhanden. Lege das Modellpaket 'pockettts-model-pack.tar.gz' in den App-Konfigurationsordner "
-         "(Samba-Freigabe 'addon_configs' -> Ordner dieser App; innerhalb der App unter /config) oder nach /share/pockettts/, "
-         "oder trage unter 'Konfiguration' einen LAN-Link (import_url) ein. Die App importiert es automatisch, kein Neustart noetig. Siehe DOCS.md.")
+HOWTO = ("Keine Modelldateien gefunden - die App wartet. Modellpaket 'pockettts-model-pack.tar.gz' in den App-Konfigurationsordner "
+         "(Samba 'addon_configs') oder nach /share/pockettts/ legen, oder import_url setzen. Import erfolgt automatisch (DOCS.md, Abschnitt 3).")
+
+WAITING_FLAG = os.environ.get("WAITING_FLAG", "/run/pockettts_waiting")
+
+def set_waiting(on):
+    """Marker fuer den Healthcheck: Warten auf das Modellpaket ist ein gueltiger, gesunder Zustand (kein Neustart-Loop)."""
+    try:
+        if on: open(WAITING_FLAG, "w").close()
+        else: os.remove(WAITING_FLAG)
+    except OSError: pass
 
 def setup_logging(level):
     logging.basicConfig(level=getattr(logging, level.upper()), format="%(asctime)s %(levelname)-7s %(name)s: %(message)s", datefmt="%H:%M:%S", stream=sys.stdout)
@@ -28,8 +36,9 @@ async def wait_for_models(s, stop):
             log.error("Modellimport fehlgeschlagen: %r", e)
         now = asyncio.get_running_loop().time()
         if now - last_hint > 300:
-            log.error("%s Probleme: %s", HOWTO, "; ".join(inst.problems)); last_hint = now
-        try: await asyncio.wait_for(stop.wait(), 15)
+            shown = inst.problems[:2] + ([f"... und {len(inst.problems) - 2} weitere"] if len(inst.problems) > 2 else [])
+            log.warning("%s Fehlt: %s", HOWTO, "; ".join(shown)); last_hint = now
+        try: await asyncio.wait_for(stop.wait(), 5)
         except asyncio.TimeoutError: pass
     return False
 
@@ -41,7 +50,13 @@ async def amain():
     log.info("PocketTTS Local INT8 %s startet (Sprache %s, Standardstimme %s)", VERSION, s.language, s.default_voice)
     stop = asyncio.Event(); loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT): loop.add_signal_handler(sig, stop.set)
-    if not await wait_for_models(s, stop): return 0
+    stub = asyncio.create_task(wyoming_server.run_stub(f"tcp://0.0.0.0:{WYOMING_PORT}"))
+    await asyncio.sleep(0.5)
+    for sig in (signal.SIGTERM, signal.SIGINT): loop.add_signal_handler(sig, stop.set)      # wyoming ersetzt die Handler (siehe unten)
+    set_waiting(True)
+    ok = await wait_for_models(s, stop)
+    set_waiting(False); stub.cancel(); await asyncio.gather(stub, return_exceptions=True); await asyncio.sleep(0.3)
+    if not ok: return 0
     added = importer.sync_custom_voices()
     if added: log.info("Eigene Stimmen uebernommen: %s", ", ".join(added))
     voices = importer.voices()

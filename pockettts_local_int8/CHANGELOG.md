@@ -2,6 +2,15 @@
 
 Alle nennenswerten Änderungen dieser App. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [1.0.1] - 2026-10-15
+
+### Behoben
+- Beim Warten auf das Modellpaket meldete der Container „unhealthy“; der Supervisor wartete deshalb 120 s auf den Start
+  („Timeout while waiting for app … to start“). Das Warten ist jetzt ein gesunder Zustand, und der Wyoming-Port ist
+  schon offen (Platzhalter-Server), sodass auch der Watchdog nicht neu startet.
+- Docker-Healthcheck prüft beim Start alle 3 s (`--start-interval`), die App gilt nach wenigen Sekunden als gesund.
+- Die Hinweiszeile im Log ist kürzer (Warnung statt Fehler, nur die ersten fehlenden Dateien).
+
 ## [1.0.0] - 2026-10-15
 
 ### Hinzugefügt

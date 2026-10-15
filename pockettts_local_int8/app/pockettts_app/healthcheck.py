@@ -13,6 +13,8 @@ async def check(uri, timeout=6):
                 info = Info.from_event(ev); return any(p.voices for p in info.tts)
 
 if __name__ == "__main__":
+    if os.path.exists(os.environ.get("WAITING_FLAG", "/run/pockettts_waiting")):
+        sys.exit(0)            # wartet auf das Modellpaket: gewollter Zustand, nicht "unhealthy"
     uri = os.environ.get("HEALTH_URI", "tcp://127.0.0.1:10302")
     try: ok = asyncio.run(asyncio.wait_for(check(uri), 8))
     except Exception: ok = False

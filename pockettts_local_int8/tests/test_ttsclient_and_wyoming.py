@@ -158,3 +158,20 @@ class Flow(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(wyoming_server.split_sentences("Es sind 12.5 Grad. Wirklich?"), ["Es sind 12.5 Grad.", "Wirklich?"])
 
 if __name__ == "__main__": unittest.main()
+
+class Waiting(unittest.IsolatedAsyncioTestCase):
+    async def test_stub_answers_describe_with_empty_service_list(self):
+        t = asyncio.create_task(wyoming_server.run_stub("tcp://127.0.0.1:18310")); await asyncio.sleep(0.3)
+        try:
+            async with AsyncClient.from_uri("tcp://127.0.0.1:18310") as c:
+                await c.write_event(Describe().event()); ev = await asyncio.wait_for(c.read_event(), 5)
+            self.assertEqual(Info.from_event(ev).tts, [])
+        finally: t.cancel()
+
+    def test_healthcheck_is_healthy_while_waiting_for_models(self):
+        import subprocess, sys, tempfile
+        flag = tempfile.NamedTemporaryFile(delete=False).name
+        env = {**os.environ, "WAITING_FLAG": flag, "HEALTH_URI": "tcp://127.0.0.1:1"}
+        self.assertEqual(subprocess.run([sys.executable, "-m", "pockettts_app.healthcheck"], env=env, cwd="/opt/app" if os.path.isdir("/opt/app") else None).returncode, 0)
+        os.remove(flag)
+        self.assertEqual(subprocess.run([sys.executable, "-m", "pockettts_app.healthcheck"], env=env, cwd="/opt/app" if os.path.isdir("/opt/app") else None).returncode, 1)   # kein Flag, kein Server: unhealthy
