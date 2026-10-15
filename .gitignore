@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.tar.gz
+*.tar
+run/
+.run/
+dist/

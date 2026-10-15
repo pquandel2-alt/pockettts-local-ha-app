@@ -1,0 +1,51 @@
+configuration:
+  language:
+    name: Language
+    description: Speech language. The bundled German model supports "de" only.
+  default_voice:
+    name: Default voice
+    description: Voice used when Home Assistant does not request a specific one (default juergen). All voices appear in the Assist voice picker.
+  threads:
+    name: CPU threads
+    description: Total ONNX Runtime thread budget. 2 is the measured sweet spot (about 1.5 CPU cores while speaking, nearly 0 % idle).
+  streaming:
+    name: Streaming
+    description: Send audio while it is generated. Turn off to send each answer as one block after it is complete (slower start, no gaps).
+  first_chunk:
+    name: First chunk (frames)
+    description: Frames (80 ms each) decoded for the first chunk. Lower is faster to start.
+  max_chunk:
+    name: Max chunk (frames)
+    description: Maximum frames per later chunk. Must be at least the first chunk.
+  prebuffer_ms:
+    name: Audio prebuffer (ms)
+    description: Audio collected before sending the first block. Prevents short gaps; about 150 ms is a good compromise.
+  lead_in_ms:
+    name: Lead-in silence (ms)
+    description: Silence the engine prepends to the first chunk. The adapter trims leading silence anyway; keep 0.
+  warmup:
+    name: Warm-up on start
+    description: Synthesize a short test phrase after start so the first real request is fast.
+  preload_voices:
+    name: Preload all voices
+    description: Build the voice and KV caches of all voices at start (takes about one minute the first time only).
+  normalize_text:
+    name: German text normalization
+    description: Convert numbers, times, units and abbreviations to words (PocketTTS pronounces raw digits badly).
+  ort_spinning:
+    name: CPU spin-wait
+    description: Let ONNX Runtime worker threads busy-wait between operations. Off saves CPU for other Home Assistant services.
+  temperature:
+    name: Sampling temperature
+    description: Randomness of the voice generation (0.7 = upstream default). Lower values are more stable and consistent, higher values more lively.
+  log_level:
+    name: Log level
+    description: Log verbosity. Spoken texts are only logged at "debug".
+  import_url:
+    name: Model pack URL (one-time import)
+    description: Optional http(s) URL of the model pack tar.gz in your own network. Only used while no models are installed.
+  import_sha256:
+    name: Model pack SHA-256
+    description: Optional SHA-256 of the file behind the import URL (recommended).
+network:
+  10302/tcp: Wyoming protocol (text-to-speech)

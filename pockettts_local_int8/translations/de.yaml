@@ -1,0 +1,51 @@
+configuration:
+  language:
+    name: Sprache
+    description: Sprache der Ausgabe. Das mitgelieferte deutsche Modell unterstützt nur "de".
+  default_voice:
+    name: Standardstimme
+    description: Stimme, wenn Home Assistant keine bestimmte anfordert (Standard juergen). Alle Stimmen erscheinen in der Stimmenauswahl von Assist.
+  threads:
+    name: CPU-Threads
+    description: Gesamtbudget an ONNX-Runtime-Threads. 2 ist der gemessene beste Kompromiss (ca. 1,5 CPU-Kerne beim Sprechen, im Leerlauf fast 0 %).
+  streaming:
+    name: Streaming
+    description: Audio senden, während es erzeugt wird. Aus = jede Antwort erst komplett erzeugen und dann in einem Block senden (späterer Start, keine Lücken).
+  first_chunk:
+    name: Erster Chunk (Frames)
+    description: Frames (je 80 ms) für den ersten Audio-Chunk. Kleiner = schnellerer Start.
+  max_chunk:
+    name: Maximaler Chunk (Frames)
+    description: Maximale Frames je weiterem Chunk. Muss mindestens so groß wie der erste Chunk sein.
+  prebuffer_ms:
+    name: Audio-Vorpuffer (ms)
+    description: Audio, das vor dem ersten Block gesammelt wird. Verhindert kurze Lücken; etwa 150 ms sind ein guter Kompromiss.
+  lead_in_ms:
+    name: Vorlauf-Stille (ms)
+    description: Stille, die die Engine vor den ersten Chunk setzt. Der Adapter schneidet führende Stille ohnehin ab; auf 0 lassen.
+  warmup:
+    name: Warmup beim Start
+    description: Nach dem Start einen kurzen Testsatz erzeugen, damit die erste echte Anfrage schnell ist.
+  preload_voices:
+    name: Alle Stimmen vorladen
+    description: Stimm- und KV-Caches aller Stimmen beim Start anlegen (nur beim ersten Mal etwa eine Minute).
+  normalize_text:
+    name: Deutsche Textnormalisierung
+    description: Zahlen, Uhrzeiten, Einheiten und Abkürzungen in Wörter umwandeln (PocketTTS spricht rohe Ziffern schlecht).
+  ort_spinning:
+    name: CPU-Spin-Wait
+    description: ONNX-Runtime-Threads zwischen Operationen aktiv warten lassen. Aus spart CPU für andere Home-Assistant-Dienste.
+  temperature:
+    name: Sampling-Temperatur
+    description: Zufälligkeit der Stimmerzeugung (0,7 = Upstream-Standard). Niedriger = stabiler und gleichmäßiger, höher = lebendiger.
+  log_level:
+    name: Log-Level
+    description: Ausführlichkeit der Logs. Gesprochene Texte werden nur bei "debug" protokolliert.
+  import_url:
+    name: Modellpaket-URL (einmaliger Import)
+    description: Optionaler http(s)-Link auf das Modellpaket (tar.gz) in deinem eigenen Netzwerk. Wird nur genutzt, solange keine Modelle installiert sind.
+  import_sha256:
+    name: Modellpaket SHA-256
+    description: Optionaler SHA-256 der Datei hinter der Import-URL (empfohlen).
+network:
+  10302/tcp: Wyoming-Protokoll (Text-to-Speech)

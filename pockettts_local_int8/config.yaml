@@ -1,0 +1,59 @@
+---
+name: PocketTTS Local INT8
+version: "1.0.0"
+slug: pockettts_local_int8
+description: >-
+  High-performance offline German Text-to-Speech for Home Assistant using PocketTTS C++,
+  ONNX Runtime INT8 and Wyoming streaming.
+arch:
+  - amd64
+init: false
+boot: auto
+stage: experimental
+homeassistant: 2024.1.0
+timeout: 20
+tmpfs: true
+discovery:
+  - wyoming
+ports:
+  "10302/tcp": 10302
+watchdog: tcp://[HOST]:[PORT:10302]
+map:
+  - type: app_config
+    read_only: false
+  - type: share
+    read_only: true
+backup_exclude:
+  - "*/.cache"
+options:
+  language: de
+  default_voice: juergen
+  threads: 2
+  streaming: true
+  first_chunk: 2
+  max_chunk: 4
+  prebuffer_ms: 150
+  lead_in_ms: 0
+  warmup: true
+  preload_voices: true
+  normalize_text: true
+  ort_spinning: false
+  temperature: 0.7
+  log_level: info
+schema:
+  language: list(de)
+  default_voice: list(juergen|bill_boerst|charles|daan|george|giovanni|michael|paul|peter_yearsley|rafael|stuart_bell)
+  threads: int(1,8)
+  streaming: bool
+  first_chunk: int(1,15)
+  max_chunk: int(1,30)
+  prebuffer_ms: int(0,3000)
+  lead_in_ms: int(0,1000)
+  warmup: bool
+  preload_voices: bool
+  normalize_text: bool
+  ort_spinning: bool
+  temperature: float(0.1,1.0)
+  log_level: list(debug|info|warning|error)
+  import_url: url?
+  import_sha256: match(^[A-Fa-f0-9]{64}$)?

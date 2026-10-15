@@ -1,0 +1,42 @@
+diff --git a/pocket_tts.cpp b/pocket_tts.cpp
+index be5fa1e..6252417 100644
+--- a/pocket_tts.cpp
++++ b/pocket_tts.cpp
+@@ -1634,6 +1634,9 @@ public:
+             opts.SetIntraOpNumThreads(threads);
+             opts.SetInterOpNumThreads(1);
+             opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
++            // Local patch: PTT_ORT_ALLOW_SPINNING=0 stops ORT worker threads from busy-waiting between calls
++            if (const char* sp = std::getenv("PTT_ORT_ALLOW_SPINNING"); sp && std::string(sp) == "0")
++                opts.AddConfigEntry("session.intra_op.allow_spinning", "0");
+             return opts;
+         };
+         
+@@ -1647,6 +1650,9 @@ public:
+             opts.SetIntraOpNumThreads(threads);
+             opts.SetInterOpNumThreads(1);
+             opts.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
++            // Local patch: PTT_ORT_ALLOW_SPINNING=0 stops ORT worker threads from busy-waiting between calls
++            if (const char* sp = std::getenv("PTT_ORT_ALLOW_SPINNING"); sp && std::string(sp) == "0")
++                opts.AddConfigEntry("session.intra_op.allow_spinning", "0");
+             opts.DisableMemPattern();
+             opts.DisableCpuMemArena();
+             return opts;
+@@ -2678,7 +2684,16 @@ public:
+         
+         sockaddr_in addr{};
+         addr.sin_family = AF_INET;
+-        addr.sin_addr.s_addr = INADDR_ANY;
++        // Local patch: bind to loopback by default (override with PTT_BIND_ADDR). The app talks to this
++        // server only from inside the same container, so it must not be reachable from other containers.
++        {
++            const char* be = std::getenv("PTT_BIND_ADDR");
++            std::string bind_addr = (be && *be) ? be : "127.0.0.1";
++            if (inet_pton(AF_INET, bind_addr.c_str(), &addr.sin_addr) != 1) {
++                std::cerr << "Invalid PTT_BIND_ADDR: " << bind_addr << "\n";
++                return false;
++            }
++        }
+         addr.sin_port = htons(port_);
+         
+         if (bind(server_fd_, (sockaddr*)&addr, sizeof(addr)) < 0) {
