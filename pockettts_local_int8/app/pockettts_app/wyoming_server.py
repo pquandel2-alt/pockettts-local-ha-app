@@ -9,6 +9,7 @@ from wyoming.server import AsyncEventHandler, AsyncServer
 from wyoming.tts import Synthesize, SynthesizeChunk, SynthesizeStart, SynthesizeStop, SynthesizeStopped
 from . import importer
 from .engine import PORT as PT_PORT
+from .enhance import Enhancer
 from .german_norm import normalize
 from .ttsclient import TtsError, stream_pcm
 
@@ -75,7 +76,7 @@ class Handler(_QuietDisconnect, AsyncEventHandler):
         if not text: return
         if self.s.normalize_text: text = normalize(text)
         s = self.s; t0 = time.perf_counter(); first_out = None; total = 0; carry = b""; lead_done = False
-        pend = []; pend_n = 0; released = self.started and s.streaming
+        pend = []; pend_n = 0; released = self.started and s.streaming; enh = Enhancer(s.volume_boost_db, s.treble_boost_db)
         prebuf = s.prebuffer_ms if s.streaming else 10**9
         async with self.synth.lock:
             self.synth.requests += 1
@@ -98,11 +99,12 @@ class Handler(_QuietDisconnect, AsyncEventHandler):
                         pend.append(x); pend_n += len(x)
                         if pend_n * 1000 < prebuf * RATE: continue
                         x = np.concatenate(pend); pend = []; released = True
-                    await self._emit(x); total += len(x)
+                    await self._emit(enh.process(x)); total += len(x)
                     if first_out is None: first_out = time.perf_counter() - t0
                 if pend:
-                    x = np.concatenate(pend); await self._emit(x); total += len(x)
+                    x = np.concatenate(pend); await self._emit(enh.process(x)); total += len(x)
                     if first_out is None: first_out = time.perf_counter() - t0
+                if total: await self._emit(enh.flush())
             except (TtsError, OSError, asyncio.TimeoutError, asyncio.IncompleteReadError) as e:
                 self.synth.errors += 1; self.error = f"Synthese fehlgeschlagen ({type(e).__name__})"; log.error("Synthese fehlgeschlagen (%s): %r", type(e).__name__, e)
             finally:

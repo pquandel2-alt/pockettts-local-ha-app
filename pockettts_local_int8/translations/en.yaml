@@ -41,6 +41,12 @@ configuration:
   temperature:
     name: Sampling temperature
     description: Randomness of the voice generation (0.7 = upstream default). Lower values are more stable and consistent, higher values more lively.
+  volume_boost_db:
+    name: Volume boost (dB)
+    description: Output gain with a soft limiter against clipping. PocketTTS is quiet on its own (about -26 dBFS); 8 dB brings it to a typical -19 dBFS. 0 = off.
+  treble_boost_db:
+    name: Treble boost (dB)
+    description: Boosts frequencies from about 2 kHz (fully from 4 kHz) so the voice sounds less muffled. 8 dB roughly matches the tone of the reference voices. 0 = off.
   log_level:
     name: Log level
     description: Log verbosity. Spoken texts are only logged at "debug".

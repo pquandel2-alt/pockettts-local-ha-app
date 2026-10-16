@@ -25,6 +25,8 @@ class Settings:
     normalize_text: bool = True
     ort_spinning: bool = False
     temperature: float = 0.7
+    volume_boost_db: int = 8
+    treble_boost_db: int = 8
     log_level: str = "info"
     import_url: str = ""
     import_sha256: str = ""
@@ -72,6 +74,7 @@ def parse(o: dict) -> Settings:
         warmup=_bool(o, "warmup", d.warmup), preload_voices=_bool(o, "preload_voices", d.preload_voices),
         normalize_text=_bool(o, "normalize_text", d.normalize_text), ort_spinning=_bool(o, "ort_spinning", d.ort_spinning),
         temperature=_float(o, "temperature", 0.1, 1.0, d.temperature),
+        volume_boost_db=_int(o, "volume_boost_db", 0, 20, d.volume_boost_db), treble_boost_db=_int(o, "treble_boost_db", 0, 12, d.treble_boost_db),
         log_level=level, import_url=str(o.get("import_url") or ""), import_sha256=str(o.get("import_sha256") or "").lower(),
     )
     if s.max_chunk < s.first_chunk:

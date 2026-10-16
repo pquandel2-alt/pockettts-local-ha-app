@@ -2,6 +2,16 @@
 
 Alle nennenswerten Änderungen dieser App. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [1.0.3] - 2026-10-16
+
+### Hinzugefügt
+- **Klangaufbereitung** gegen leisen und dumpfen Klang (Hörtest: Variante „lauter + Höhen +8 dB“ bevorzugt):
+  - `volume_boost_db` (Standard 8): Verstärkung mit weichem Begrenzer; Pegel von ca. −26 auf ca. −19 dBFS.
+  - `treble_boost_db` (Standard 8): linearphasige Höhenanhebung ab ca. 2 kHz (voll ab 4 kHz); Energie über 3 kHz von ca. 0,5 % auf ca. 3 %
+    (Referenzstimmen 2–3 %).
+  - Läuft im Streaming nahtlos je Satz, ca. 1,3 ms Verzögerung, kein messbarer Einfluss auf die Verständlichkeit (Whisper-Rückerkennung).
+- 5 neue Tests (47 gesamt).
+
 ## [1.0.2] - 2026-10-16
 
 ### Behoben
