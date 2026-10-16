@@ -44,9 +44,9 @@ configuration:
   volume_boost_db:
     name: Lautstärke-Anhebung (dB)
     description: Verstärkung der Ausgabe mit weichem Begrenzer gegen Übersteuern. PocketTTS ist von sich aus leise (ca. -26 dBFS); 8 dB bringen es auf übliche ca. -19 dBFS. 0 = aus.
-  treble_boost_db:
-    name: Höhen-Anhebung (dB)
-    description: Hebt Frequenzen ab ca. 2 kHz an (voll ab 4 kHz), damit die Stimme weniger dumpf klingt. 8 dB entsprechen etwa der Klangfarbe der Referenzstimmen. 0 = aus.
+  sound_profile:
+    name: Klangprofil
+    description: "Korrigiert den dumpfen Klang von PocketTTS (zu viel Dröhnen unter 100 Hz, zu wenig Präsenz bei 1-3 kHz). klar = an klare Sprachausgaben angeglichen, oben etwas heller (im Hörtest bevorzugt). weich = gleiche Korrektur, Höhen etwas zurückhaltender. aus = keine Klangkorrektur."
   log_level:
     name: Log-Level
     description: Ausführlichkeit der Logs. Gesprochene Texte werden nur bei "debug" protokolliert.

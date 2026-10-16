@@ -5,6 +5,7 @@ from dataclasses import dataclass
 VOICES_BUILTIN = ["juergen", "bill_boerst", "charles", "daan", "george", "giovanni", "michael", "paul", "peter_yearsley", "rafael", "stuart_bell"]
 LOG_LEVELS = ("debug", "info", "warning", "error")
 MAIN_MODELS = ("fp32", "int8")
+SOUND_PROFILES = ("klar", "weich", "aus")
 
 class SettingsError(ValueError):
     pass
@@ -26,7 +27,7 @@ class Settings:
     ort_spinning: bool = False
     temperature: float = 0.7
     volume_boost_db: int = 8
-    treble_boost_db: int = 8
+    sound_profile: str = "klar"
     log_level: str = "info"
     import_url: str = ""
     import_sha256: str = ""
@@ -63,6 +64,9 @@ def parse(o: dict) -> Settings:
     main_model = o.get("main_model", d.main_model)
     if main_model not in MAIN_MODELS:
         raise SettingsError(f"main_model muss eines von {MAIN_MODELS} sein (ist: {main_model!r}).")
+    sound_profile = o.get("sound_profile", d.sound_profile)
+    if sound_profile not in SOUND_PROFILES:
+        raise SettingsError(f"sound_profile muss eines von {SOUND_PROFILES} sein (ist: {sound_profile!r}).")
     s = Settings(
         language=language, default_voice=voice,
         threads=_int(o, "threads", 1, 8, d.threads), main_model=main_model,
@@ -74,7 +78,7 @@ def parse(o: dict) -> Settings:
         warmup=_bool(o, "warmup", d.warmup), preload_voices=_bool(o, "preload_voices", d.preload_voices),
         normalize_text=_bool(o, "normalize_text", d.normalize_text), ort_spinning=_bool(o, "ort_spinning", d.ort_spinning),
         temperature=_float(o, "temperature", 0.1, 1.0, d.temperature),
-        volume_boost_db=_int(o, "volume_boost_db", 0, 20, d.volume_boost_db), treble_boost_db=_int(o, "treble_boost_db", 0, 12, d.treble_boost_db),
+        volume_boost_db=_int(o, "volume_boost_db", 0, 20, d.volume_boost_db), sound_profile=sound_profile,
         log_level=level, import_url=str(o.get("import_url") or ""), import_sha256=str(o.get("import_sha256") or "").lower(),
     )
     if s.max_chunk < s.first_chunk:

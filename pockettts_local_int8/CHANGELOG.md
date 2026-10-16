@@ -2,6 +2,17 @@
 
 Alle nennenswerten Änderungen dieser App. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [1.0.4] - 2026-10-16
+
+### Geändert
+- **Klangkorrektur statt reiner Höhenanhebung:** Die Messung gegen klare Sprachausgaben (Supertonic, Piper) zeigte als Ursache des
+  dumpfen Klangs gut 10 dB zu viel Dröhnen unter 100 Hz und ca. 8 dB zu wenig Präsenz bei 1,6–3 kHz – die Höhenanhebung aus 1.0.3
+  setzte fast nur oberhalb von 3 kHz an. Neue Option `sound_profile` (`klar` = Standard, im Hörtest bevorzugt; `weich`; `aus`)
+  gleicht das Langzeitspektrum mit einem linearphasigen FIR (255 Taps, ca. 5 ms) daran an. Pegel unverändert (ca. −20 dBFS mit
+  `volume_boost_db` 8), erster Ton ca. 0,5 s, Verständlichkeit unverändert (Whisper-Rückerkennung).
+- `treble_boost_db` entfällt (ersetzt durch `sound_profile`); ein gespeicherter alter Wert wird ignoriert.
+- 49 automatisierte Tests.
+
 ## [1.0.3] - 2026-10-16
 
 ### Hinzugefügt

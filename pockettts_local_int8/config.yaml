@@ -1,6 +1,6 @@
 ---
 name: PocketTTS Local INT8
-version: "1.0.3"
+version: "1.0.4"
 slug: pockettts_local_int8
 description: >-
   High-performance offline German Text-to-Speech for Home Assistant using PocketTTS C++,
@@ -41,7 +41,7 @@ options:
   ort_spinning: false
   temperature: 0.7
   volume_boost_db: 8
-  treble_boost_db: 8
+  sound_profile: klar
   log_level: info
 schema:
   language: list(de)
@@ -59,7 +59,7 @@ schema:
   ort_spinning: bool
   temperature: float(0.1,1.0)
   volume_boost_db: int(0,20)
-  treble_boost_db: int(0,12)
+  sound_profile: list(klar|weich|aus)
   log_level: list(debug|info|warning|error)
   import_url: url?
   import_sha256: match(^[A-Fa-f0-9]{64}$)?

@@ -92,9 +92,9 @@ class Flow(unittest.IsolatedAsyncioTestCase):
         return np.abs(np.frombuffer(pcm, "<i2") / 32768.0).max(), len(pcm) // 2
 
     async def test_volume_boost_and_limiter(self):
-        off, n_off = await self._peak(cfg.Settings(prebuffer_ms=150, volume_boost_db=0, treble_boost_db=0))
-        on, n_on = await self._peak(cfg.Settings(prebuffer_ms=150, volume_boost_db=8, treble_boost_db=0))
-        hot, _ = await self._peak(cfg.Settings(prebuffer_ms=150, volume_boost_db=20, treble_boost_db=8))
+        off, n_off = await self._peak(cfg.Settings(prebuffer_ms=150, volume_boost_db=0, sound_profile="aus"))
+        on, n_on = await self._peak(cfg.Settings(prebuffer_ms=150, volume_boost_db=8, sound_profile="aus"))
+        hot, _ = await self._peak(cfg.Settings(prebuffer_ms=150, volume_boost_db=20, sound_profile="klar"))
         self.assertAlmostEqual(off, 0.3, delta=0.01); self.assertAlmostEqual(on / off, 10 ** (8 / 20), delta=0.05); self.assertEqual(n_on, n_off)
         self.assertLess(hot, 1.0)                                  # Limiter: keine harte Uebersteuerung
 

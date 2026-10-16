@@ -76,7 +76,7 @@ class Handler(_QuietDisconnect, AsyncEventHandler):
         if not text: return
         if self.s.normalize_text: text = normalize(text)
         s = self.s; t0 = time.perf_counter(); first_out = None; total = 0; carry = b""; lead_done = False
-        pend = []; pend_n = 0; released = self.started and s.streaming; enh = Enhancer(s.volume_boost_db, s.treble_boost_db)
+        pend = []; pend_n = 0; released = self.started and s.streaming; enh = Enhancer(s.volume_boost_db, s.sound_profile)
         prebuf = s.prebuffer_ms if s.streaming else 10**9
         async with self.synth.lock:
             self.synth.requests += 1
