@@ -37,6 +37,12 @@ def split_stream(buf):
     if last is None: return [], buf
     return split_sentences(buf[:last.start()]), buf[last.end():]
 
+class _QuietDisconnect:
+    """Hart getrennte Clients (Healthcheck, Satellit) sind normal: kein Traceback "Task exception was never retrieved"."""
+    async def run(self):
+        try: await super().run()
+        except (ConnectionError, asyncio.IncompleteReadError) as e: log.debug("Client getrennt: %r", e)
+
 class ClientGone(Exception):
     """Der Wyoming-Client hat die Verbindung waehrend der Ausgabe beendet (kein Engine-Fehler)."""
 
@@ -50,7 +56,7 @@ class Synth:
     def voice_ok(self, name):
         return name if name and name in importer.voices() else self.default_voice
 
-class Handler(AsyncEventHandler):
+class Handler(_QuietDisconnect, AsyncEventHandler):
     def __init__(self, info, synth, *a, **kw):
         super().__init__(*a, **kw); self.info_event = info.event(); self.synth = synth; self.s = synth.s
         self.buf = ""; self.voice = synth.default_voice; self.streaming_in = False; self.started = False; self.error = None
@@ -157,7 +163,7 @@ async def warmup(synth, settings):
             except Exception as e:
                 log.warning("Warmup %s fehlgeschlagen (defekte Stimmdatei?): %r", v, e)
 
-class _StubHandler(AsyncEventHandler):
+class _StubHandler(_QuietDisconnect, AsyncEventHandler):
     """Platzhalter, solange noch keine Modelle importiert sind: Port offen, Describe wird mit leerer Dienstliste beantwortet."""
     async def handle_event(self, event: Event) -> bool:
         if Describe.is_type(event.type): await self.write_event(Info(tts=[]).event())

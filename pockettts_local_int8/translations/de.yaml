@@ -7,7 +7,10 @@ configuration:
     description: Stimme, wenn Home Assistant keine bestimmte anfordert (Standard juergen). Alle Stimmen erscheinen in der Stimmenauswahl von Assist.
   threads:
     name: CPU-Threads
-    description: Gesamtbudget an ONNX-Runtime-Threads. 2 ist der gemessene beste Kompromiss (ca. 1,5 CPU-Kerne beim Sprechen, im Leerlauf fast 0 %).
+    description: Gesamtbudget an ONNX-Runtime-Threads. Mit FP32-Hauptmodell sind 3 der gemessene beste Kompromiss (mit INT8 reichen 2). Im Leerlauf fast 0 % CPU.
+  main_model:
+    name: Hauptmodell
+    description: "fp32 (empfohlen) = deutlich verständlicher: in Tests verschluckte INT8 etwa 10 % der Wörter, FP32 unter 1 %; etwa 0,15 s späterer Start und rund 250 MB mehr RAM. int8 = schneller, aber undeutlicher. fp32 braucht das Modellpaket ab 1.0.2, sonst wird automatisch int8 genutzt."
   streaming:
     name: Streaming
     description: Audio senden, während es erzeugt wird. Aus = jede Antwort erst komplett erzeugen und dann in einem Block senden (späterer Start, keine Lücken).
@@ -43,7 +46,7 @@ configuration:
     description: Ausführlichkeit der Logs. Gesprochene Texte werden nur bei "debug" protokolliert.
   import_url:
     name: Modellpaket-URL (einmaliger Import)
-    description: Optionaler http(s)-Link auf das Modellpaket (tar.gz) in deinem eigenen Netzwerk. Wird nur genutzt, solange keine Modelle installiert sind.
+    description: Optionaler http(s)-Link auf das Modellpaket (tar.gz) in deinem eigenen Netzwerk. Wird nur genutzt, solange keine Modelle (oder noch kein FP32-Hauptmodell) installiert sind. Nach dem Eintragen die App neu starten.
   import_sha256:
     name: Modellpaket SHA-256
     description: Optionaler SHA-256 der Datei hinter der Import-URL (empfohlen).

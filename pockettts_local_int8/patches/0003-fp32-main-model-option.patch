@@ -1,0 +1,37 @@
+diff --git a/pocket_tts.cpp b/pocket_tts.cpp
+index 6252417..d5b09a8 100644
+--- a/pocket_tts.cpp
++++ b/pocket_tts.cpp
+@@ -573,6 +573,13 @@ static std::mutex g_log_mu;
+ //                hundreds of ms for a full conditioning pass.
+ // ════════════════════════════════════════════════════════════════════════════
+ 
++// Local patch: PTT_MAIN_PRECISION=fp32 loads only flow_lm_main in FP32 (flow_lm_main.onnx) while the other
++// models keep --precision. INT8 quantization of flow_lm_main makes the German model slur/drop words.
++static std::string main_model_suffix(const std::string& precision) {
++    if (const char* mp = std::getenv("PTT_MAIN_PRECISION"); mp && std::string(mp) == "fp32") return "";
++    return precision == "int8" ? "_int8" : "";
++}
++
+ namespace cache {
+ 
+ static time_t get_mtime(const std::string& path) {
+@@ -632,7 +639,7 @@ static std::string get_cache_path(const std::string& voices_dir, const std::stri
+         uint64_t h = fnv1a(CACHE_VERSION, strlen(CACHE_VERSION));
+         h = hash_file(models_dir + "/mimi_encoder.onnx", h);
+         h = hash_file(models_dir + "/text_conditioner.onnx", h);
+-        h = hash_file(models_dir + "/flow_lm_main" + sfx + ".onnx", h);
++        h = hash_file(models_dir + "/flow_lm_main" + main_model_suffix(precision) + ".onnx", h);
+         h = fnv1a(precision.data(), precision.size(), h);
+         // Reference audio content (not just mtime — copies may keep mtimes).
+         std::ifstream vf(voice_path, std::ios::binary);
+@@ -1682,7 +1689,8 @@ public:
+         
+         enc_ = std::make_unique<OrtSession>(env, cfg_.models_dir + "/mimi_encoder.onnx", opts_enc, "mimi_encoder");
+         txt_ = std::make_unique<OrtSession>(env, cfg_.models_dir + "/text_conditioner.onnx", opts_full, "text_conditioner");
+-        main_ = std::make_unique<OrtSession>(env, cfg_.models_dir + "/flow_lm_main" + sfx + ".onnx", opts_ar, "flow_lm_main" + sfx);
++        const std::string msfx = main_model_suffix(cfg_.precision);
++        main_ = std::make_unique<OrtSession>(env, cfg_.models_dir + "/flow_lm_main" + msfx + ".onnx", opts_ar, "flow_lm_main" + msfx);
+         flow_ = std::make_unique<OrtSession>(env, cfg_.models_dir + "/flow_lm_flow" + sfx + ".onnx", opts_ar, "flow_lm_flow" + sfx);
+         dec_ = std::make_unique<OrtSession>(env, cfg_.models_dir + "/mimi_decoder" + sfx + ".onnx", opts_dec, "mimi_decoder" + sfx);
+         

@@ -1,6 +1,6 @@
 # PocketTTS Local – Home Assistant App
 
-Offline-Sprachausgabe auf Deutsch für Home Assistant Assist: native **PocketTTS.cpp**-Engine (ONNX Runtime, INT8, nur CPU),
+Offline-Sprachausgabe auf Deutsch für Home Assistant Assist: native **PocketTTS.cpp**-Engine (ONNX Runtime, nur CPU; Hauptmodell FP32, Rest INT8),
 echtes Audio-Streaming über das **Wyoming**-Protokoll, deutsche Textnormalisierung, elf Stimmen. Nur **amd64**.
 
 > **Wichtig:** Die Modellgewichte (`kyutai/pocket-tts`, Paket `german`) sind bei Hugging Face zugangsbeschränkt und

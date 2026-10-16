@@ -14,6 +14,7 @@ SHARE = os.environ.get("SHARE_DIR", "/share")
 MODELS = f"{DATA}/models_de"; VOICES = f"{DATA}/voices_de"; MARKER = f"{DATA}/.import.json"
 REQUIRED = ["flow_lm_flow_int8.onnx", "flow_lm_main_int8.onnx", "mimi_decoder_int8.onnx", "mimi_encoder.onnx",
             "text_conditioner.onnx", "tokenizer.model", "bos_before_voice.npy"]
+FP32_MAIN = "flow_lm_main.onnx"          # optional (Modellpaket ab 1.0.2): Hauptmodell in FP32, deutlich verstaendlicher als INT8
 MEMBER_RE = re.compile(r"^(models_de|voices_de)/[A-Za-z0-9_][A-Za-z0-9_.-]*$")
 ALLOWED_EXT = (".onnx", ".npy", ".model", ".wav", ".txt")
 PACK_NAMES = ("pockettts-model-pack.tar.gz", "pockettts-model-pack.tar")
@@ -49,6 +50,15 @@ def check_install() -> Install:
     if not has_voice:
         problems.append("Keine Stimmen (*.wav) in voices_de gefunden")
     return Install(not problems, problems)
+
+def has_fp32_main() -> bool:
+    """FP32-Hauptmodell vorhanden und (laut Marker) vollstaendig?"""
+    p = f"{MODELS}/{FP32_MAIN}"
+    if not os.path.isfile(p): return False
+    try:
+        with open(MARKER) as f: want = json.load(f).get("files", {}).get(f"models_de/{FP32_MAIN}")
+    except (OSError, ValueError): want = None
+    return want is None or want["size"] == os.path.getsize(p)
 
 def _candidates(settings):
     for base in (CONFIG, f"{SHARE}/pockettts"):
@@ -125,27 +135,65 @@ def _download(url, dst, expect_sha):
     if expect_sha and h.hexdigest() != expect_sha: raise ImportError_("SHA-256 des Downloads stimmt nicht mit import_sha256 ueberein.")
     return h.hexdigest()
 
+def _import_local(kind, p, tmp):
+    if kind == "pack":
+        log.info("Modellpaket gefunden: %s - importiere ...", p); manifest = _extract_pack(p, tmp)
+    else:
+        log.info("Entpackte Modelle gefunden in %s/models_de - importiere ...", p)
+        for sub in ("models_de", "voices_de"):
+            if os.path.isdir(f"{p}/{sub}"): shutil.copytree(f"{p}/{sub}", f"{tmp}/{sub}")
+        mf = f"{p}/MANIFEST.sha256"
+        if not os.path.isfile(mf): raise ImportError_(f"{mf} fehlt - Integritaet nicht pruefbar.")
+        manifest = _parse_manifest(open(mf).read())
+    files = _verify(tmp, manifest); _install(tmp, files, os.path.basename(p)); return files
+
+def _import_url(settings, tmp):
+    host = settings.import_url.split("/")[2]; log.info("Lade Modellpaket einmalig von %s ...", host)
+    pack = f"{tmp}/pack.tar.gz"; got = _download(settings.import_url, pack, settings.import_sha256)
+    if not settings.import_sha256: log.warning("import_sha256 ist nicht gesetzt - nur das Manifest im Paket wird geprueft (SHA-256 des Downloads: %s).", got)
+    manifest = _extract_pack(pack, tmp); os.remove(pack)
+    return host, _verify(tmp, manifest)
+
+def _tmpdir():
+    tmp = f"{DATA}/.import-tmp"; shutil.rmtree(tmp, ignore_errors=True); os.makedirs(tmp); return tmp
+
 def try_import(settings) -> str:
     """Gibt eine Statusmeldung zurueck; wirft ImportError_ mit verstaendlicher Meldung bei defekten Paketen."""
-    tmp = f"{DATA}/.import-tmp"; shutil.rmtree(tmp, ignore_errors=True); os.makedirs(tmp)
+    tmp = _tmpdir()
     try:
         for kind, p in _candidates(settings):
-            if kind == "pack":
-                log.info("Modellpaket gefunden: %s - importiere ...", p); manifest = _extract_pack(p, tmp)
-            else:
-                log.info("Entpackte Modelle gefunden in %s/models_de - importiere ...", p)
-                for sub in ("models_de", "voices_de"):
-                    if os.path.isdir(f"{p}/{sub}"): shutil.copytree(f"{p}/{sub}", f"{tmp}/{sub}")
-                mf = f"{p}/MANIFEST.sha256"
-                if not os.path.isfile(mf): raise ImportError_(f"{mf} fehlt - Integritaet nicht pruefbar.")
-                manifest = _parse_manifest(open(mf).read())
-            files = _verify(tmp, manifest); _install(tmp, files, os.path.basename(p)); return f"Import aus {os.path.basename(p)} abgeschlossen ({len(files)} Dateien)."
+            files = _import_local(kind, p, tmp); return f"Import aus {os.path.basename(p)} abgeschlossen ({len(files)} Dateien)."
         if settings.import_url:
-            host = settings.import_url.split("/")[2]; log.info("Lade Modellpaket einmalig von %s ...", host)
-            pack = f"{tmp}/pack.tar.gz"; got = _download(settings.import_url, pack, settings.import_sha256)
-            if not settings.import_sha256: log.warning("import_sha256 ist nicht gesetzt - nur das Manifest im Paket wird geprueft (SHA-256 des Downloads: %s).", got)
-            manifest = _extract_pack(pack, tmp); os.remove(pack)
-            files = _verify(tmp, manifest); _install(tmp, files, "import_url"); return f"Import von {host} abgeschlossen ({len(files)} Dateien)."
+            host, files = _import_url(settings, tmp); _install(tmp, files, "import_url"); return f"Import von {host} abgeschlossen ({len(files)} Dateien)."
+        return ""
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+def _pack_has_fp32(kind, p):
+    if kind == "dir": return os.path.isfile(f"{p}/models_de/{FP32_MAIN}")
+    try:
+        with tarfile.open(p, "r:*") as t: return any(n.lstrip("./") == f"models_de/{FP32_MAIN}" for n in t.getnames())
+    except (OSError, tarfile.TarError): return False
+
+def try_upgrade(settings, state: dict) -> str:
+    """Laufende Installation ohne FP32-Hauptmodell: neues Modellpaket (Ordner, /share oder import_url) uebernehmen.
+    Bereits gepruefte Pakete ohne FP32-Hauptmodell werden nicht erneut gelesen; import_url wird je Start nur einmal versucht."""
+    seen = state.setdefault("seen", set()); tmp = _tmpdir()
+    try:
+        for kind, p in _candidates(settings):
+            try: st = os.stat(p); key = (p, st.st_size, st.st_mtime)
+            except OSError: continue
+            if key in seen: continue
+            seen.add(key)
+            if not _pack_has_fp32(kind, p):
+                log.warning("%s enthaelt kein FP32-Hauptmodell (altes Modellpaket) - bitte das neue Paket verwenden (DOCS.md, Abschnitt 3).", p); continue
+            files = _import_local(kind, p, tmp); return f"Neues Modellpaket aus {os.path.basename(p)} uebernommen ({len(files)} Dateien)."
+        if settings.import_url and not state.get("url_done"):
+            state["url_done"] = True
+            host, files = _import_url(settings, tmp)
+            if f"models_de/{FP32_MAIN}" not in files:
+                log.warning("Das Modellpaket von %s enthaelt kein FP32-Hauptmodell (altes Paket) - nicht erneut importiert.", host); return ""
+            _install(tmp, files, "import_url"); return f"Neues Modellpaket von {host} uebernommen ({len(files)} Dateien)."
         return ""
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

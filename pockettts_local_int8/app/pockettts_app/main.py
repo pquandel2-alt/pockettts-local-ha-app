@@ -42,12 +42,33 @@ async def wait_for_models(s, stop):
         except asyncio.TimeoutError: pass
     return False
 
+UPGRADE_HINT = ("Das installierte Modellpaket enthaelt noch kein FP32-Hauptmodell - die App nutzt vorerst INT8, das oefter Woerter "
+                "verschluckt. Neues Modellpaket wie beim ersten Import bereitstellen (DOCS.md, Abschnitt 3); es wird im laufenden Betrieb uebernommen.")
+
+async def upgrade_models(s, engine, synth, stop):
+    """Altes Modellpaket (nur INT8): neues Paket im laufenden Betrieb uebernehmen, dann Engine mit FP32-Hauptmodell neu starten."""
+    log.warning(UPGRADE_HINT); state = {}; loop = asyncio.get_running_loop()
+    while not stop.is_set():
+        try:
+            msg = await loop.run_in_executor(None, importer.try_upgrade, s, state)
+            if msg:
+                log.info("%s Starte die Engine mit FP32-Hauptmodell neu ...", msg)
+                async with synth.lock: await engine.restart()
+                await asyncio.wait_for(engine.ready.wait(), 150)
+                await wyoming_server.warmup(synth, s); return
+        except importer.ImportError_ as e:
+            log.error("Neues Modellpaket abgelehnt: %s", e)
+        except Exception as e:
+            log.error("Uebernahme des neuen Modellpakets fehlgeschlagen: %r", e)
+        try: await asyncio.wait_for(stop.wait(), 10)
+        except asyncio.TimeoutError: pass
+
 async def amain():
     try: s = cfg.load()
     except cfg.SettingsError as e:
         setup_logging("info"); log.error("Ungueltige Konfiguration: %s", e); return 2
     setup_logging(s.log_level)
-    log.info("PocketTTS Local INT8 %s startet (Sprache %s, Standardstimme %s)", VERSION, s.language, s.default_voice)
+    log.info("PocketTTS Local INT8 %s startet (Sprache %s, Standardstimme %s, Hauptmodell %s)", VERSION, s.language, s.default_voice, s.main_model.upper())
     stop = asyncio.Event(); loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT): loop.add_signal_handler(sig, stop.set)
     stub = asyncio.create_task(wyoming_server.run_stub(f"tcp://0.0.0.0:{WYOMING_PORT}"))
@@ -81,10 +102,11 @@ async def amain():
     for sig in (signal.SIGTERM, signal.SIGINT): loop.add_signal_handler(sig, stop.set)
     loop.run_in_executor(None, discovery.send, WYOMING_PORT)
     warm = asyncio.create_task(wyoming_server.warmup(synth, s)) if s.warmup else None
+    upgrade = asyncio.create_task(upgrade_models(s, engine, synth, stop)) if s.main_model == "fp32" and not importer.has_fp32_main() else None
     log.info("Bereit: Wyoming-Port %d, %d Stimmen.", WYOMING_PORT, len(voices))
     await stop.wait()
     log.info("Beende ...")
-    for t in (warm, server_task):
+    for t in (warm, upgrade, server_task):
         if t: t.cancel()
     await engine.stop(); return exit_code[0]
 

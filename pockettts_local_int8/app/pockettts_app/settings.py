@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 VOICES_BUILTIN = ["juergen", "bill_boerst", "charles", "daan", "george", "giovanni", "michael", "paul", "peter_yearsley", "rafael", "stuart_bell"]
 LOG_LEVELS = ("debug", "info", "warning", "error")
+MAIN_MODELS = ("fp32", "int8")
 
 class SettingsError(ValueError):
     pass
@@ -12,7 +13,8 @@ class SettingsError(ValueError):
 class Settings:
     language: str = "de"
     default_voice: str = "juergen"
-    threads: int = 2
+    threads: int = 3
+    main_model: str = "fp32"
     streaming: bool = True
     first_chunk: int = 2
     max_chunk: int = 4
@@ -56,9 +58,12 @@ def parse(o: dict) -> Settings:
     level = o.get("log_level", d.log_level)
     if level not in LOG_LEVELS:
         raise SettingsError(f"log_level muss eines von {LOG_LEVELS} sein (ist: {level!r}).")
+    main_model = o.get("main_model", d.main_model)
+    if main_model not in MAIN_MODELS:
+        raise SettingsError(f"main_model muss eines von {MAIN_MODELS} sein (ist: {main_model!r}).")
     s = Settings(
         language=language, default_voice=voice,
-        threads=_int(o, "threads", 1, 8, d.threads),
+        threads=_int(o, "threads", 1, 8, d.threads), main_model=main_model,
         streaming=_bool(o, "streaming", d.streaming),
         first_chunk=_int(o, "first_chunk", 1, 15, d.first_chunk),
         max_chunk=_int(o, "max_chunk", 1, 30, d.max_chunk),

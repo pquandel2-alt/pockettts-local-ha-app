@@ -14,7 +14,7 @@ for t in sorted(glob.glob(f"{app}/translations/*.yaml")):
 # Optionen gegen das App-Schema (so wie der Supervisor die Nutzereingaben prueft)
 ao = AppOptions(None, out["schema"], out["name"], out["slug"], resolve_secrets=False)
 print("Standardoptionen: gueltig ->", bool(ao.validate(out["options"])))
-for bad in ({"threads": 99}, {"default_voice": "nobody"}, {"log_level": "loud"}, {"import_sha256": "xyz"}, {"streaming": "ja"}, {"first_chunk": 0}):
+for bad in ({"threads": 99}, {"default_voice": "nobody"}, {"log_level": "loud"}, {"import_sha256": "xyz"}, {"streaming": "ja"}, {"first_chunk": 0}, {"main_model": "fp16"}):
     try: ao.validate({**out["options"], **bad}); print("  FEHLER: wurde NICHT abgelehnt:", bad)
     except Exception as e: print("  abgelehnt wie erwartet:", bad)
 good = {**out["options"], "import_url": "http://nas.local:8000/pockettts-model-pack.tar.gz", "import_sha256": "a"*64, "threads": 4}

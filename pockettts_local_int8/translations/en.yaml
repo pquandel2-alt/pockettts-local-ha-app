@@ -7,7 +7,10 @@ configuration:
     description: Voice used when Home Assistant does not request a specific one (default juergen). All voices appear in the Assist voice picker.
   threads:
     name: CPU threads
-    description: Total ONNX Runtime thread budget. 2 is the measured sweet spot (about 1.5 CPU cores while speaking, nearly 0 % idle).
+    description: Total ONNX Runtime thread budget. With the FP32 main model 3 is the measured sweet spot (2 is enough for INT8). Nearly 0 % CPU when idle.
+  main_model:
+    name: Main model
+    description: "fp32 (recommended) = much clearer speech: in tests INT8 slurred/dropped about 10 % of words, FP32 below 1 %; about 0.15 s later start and roughly 250 MB more RAM. int8 = faster but less clear. fp32 needs the model pack from 1.0.2, otherwise int8 is used automatically."
   streaming:
     name: Streaming
     description: Send audio while it is generated. Turn off to send each answer as one block after it is complete (slower start, no gaps).
@@ -43,7 +46,7 @@ configuration:
     description: Log verbosity. Spoken texts are only logged at "debug".
   import_url:
     name: Model pack URL (one-time import)
-    description: Optional http(s) URL of the model pack tar.gz in your own network. Only used while no models are installed.
+    description: Optional http(s) URL of the model pack tar.gz in your own network. Only used while no models (or no FP32 main model yet) are installed. Restart the app after setting it.
   import_sha256:
     name: Model pack SHA-256
     description: Optional SHA-256 of the file behind the import URL (recommended).

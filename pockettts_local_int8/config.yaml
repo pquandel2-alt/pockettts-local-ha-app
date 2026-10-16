@@ -1,6 +1,6 @@
 ---
 name: PocketTTS Local INT8
-version: "1.0.1"
+version: "1.0.2"
 slug: pockettts_local_int8
 description: >-
   High-performance offline German Text-to-Speech for Home Assistant using PocketTTS C++,
@@ -28,7 +28,8 @@ backup_exclude:
 options:
   language: de
   default_voice: juergen
-  threads: 2
+  threads: 3
+  main_model: fp32
   streaming: true
   first_chunk: 2
   max_chunk: 4
@@ -44,6 +45,7 @@ schema:
   language: list(de)
   default_voice: list(juergen|bill_boerst|charles|daan|george|giovanni|michael|paul|peter_yearsley|rafael|stuart_bell)
   threads: int(1,8)
+  main_model: list(fp32|int8)
   streaming: bool
   first_chunk: int(1,15)
   max_chunk: int(1,30)

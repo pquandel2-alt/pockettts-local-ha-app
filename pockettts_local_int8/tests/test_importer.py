@@ -70,6 +70,40 @@ class Importer(unittest.TestCase):
         self.assertEqual(self.imp.sync_custom_voices(), [])           # unveraendert -> nichts zu tun
         open(p, "wb").write(b"RIFF\x00\x00\x00\x00WAVE" + b"B" * 3000); self.assertEqual(self.imp.sync_custom_voices(), ["meine_stimme"])   # geaendert -> aktualisiert
 
+    FP32 = {"models_de/flow_lm_main.onnx": b"fp32-main"}
+
+    def test_fp32_main_is_optional_and_detected(self):
+        self._pack(f"{os.environ['APP_CONFIG_DIR']}/pockettts-model-pack.tar.gz"); self.imp.try_import(self.s)
+        self.assertTrue(self.imp.check_install().ok); self.assertFalse(self.imp.has_fp32_main())
+        self._pack(f"{os.environ['APP_CONFIG_DIR']}/pockettts-model-pack.tar.gz", extra=self.FP32); self.imp.try_import(self.s)
+        self.assertTrue(self.imp.has_fp32_main())
+        with open(f"{self.imp.MODELS}/flow_lm_main.onnx", "ab") as f: f.write(b"damage")
+        self.assertFalse(self.imp.has_fp32_main())                  # Groesse passt nicht zum Marker
+
+    def test_upgrade_skips_old_pack_once_and_takes_new_pack(self):
+        p = f"{os.environ['APP_CONFIG_DIR']}/pockettts-model-pack.tar.gz"
+        self._pack(p); self.imp.try_import(self.s); state = {}
+        with self.assertLogs("importer", "WARNING"): self.assertEqual(self.imp.try_upgrade(self.s, state), "")
+        with self.assertNoLogs("importer", "WARNING"): self.assertEqual(self.imp.try_upgrade(self.s, state), "")   # nicht erneut gelesen
+        self._pack(p, extra=self.FP32); os.utime(p, (1, 1))
+        self.assertIn("uebernommen", self.imp.try_upgrade(self.s, state)); self.assertTrue(self.imp.has_fp32_main())
+        self.assertTrue(self.imp.check_install().ok); self.assertFalse(os.path.exists(f"{os.environ['DATA_DIR']}/.import-tmp"))
+
+    def test_upgrade_rejects_corrupt_new_pack_and_keeps_install(self):
+        p = f"{os.environ['APP_CONFIG_DIR']}/pockettts-model-pack.tar.gz"
+        self._pack(p); self.imp.try_import(self.s)
+        self._pack(p, extra=self.FP32, corrupt="models_de/flow_lm_main.onnx"); os.utime(p, (1, 1))
+        with self.assertRaisesRegex(self.imp.ImportError_, "Pruefsumme"): self.imp.try_upgrade(self.s, {})
+        self.assertTrue(self.imp.check_install().ok); self.assertFalse(self.imp.has_fp32_main())
+
+    def test_engine_uses_fp32_main_only_when_present(self):
+        from pockettts_app import engine, settings as cfg
+        self._pack(f"{os.environ['APP_CONFIG_DIR']}/pockettts-model-pack.tar.gz"); self.imp.try_import(self.s)
+        self.assertEqual(engine.build_env(cfg.Settings())["PTT_MAIN_PRECISION"], "int8")          # altes Paket -> INT8
+        self._pack(f"{os.environ['APP_CONFIG_DIR']}/pockettts-model-pack.tar.gz", extra=self.FP32); self.imp.try_import(self.s)
+        self.assertEqual(engine.build_env(cfg.Settings())["PTT_MAIN_PRECISION"], "fp32")
+        self.assertEqual(engine.build_env(cfg.Settings(main_model="int8"))["PTT_MAIN_PRECISION"], "int8")
+
     def test_corrupt_voice_is_not_offered(self):
         self._pack(f"{os.environ['APP_CONFIG_DIR']}/pockettts-model-pack.tar.gz"); self.imp.try_import(self.s)
         open(f"{self.imp.VOICES}/kaputt.wav", "wb").write(b"\x00" * 500); open(f"{self.imp.VOICES}/zufall.wav", "wb").write(os.urandom(5000))

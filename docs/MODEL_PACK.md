@@ -1,6 +1,6 @@
 # Modellpaket selbst erzeugen
 
-Das Paket besteht aus den INT8-ONNX-Modellen, dem Tokenizer, `bos_before_voice.npy`, den Referenz-WAVs der Stimmen und einem
+Das Paket besteht aus den INT8-ONNX-Modellen, dem Hauptmodell zusätzlich in FP32 (`flow_lm_main.onnx`, ab App 1.0.2), dem Tokenizer, `bos_before_voice.npy`, den Referenz-WAVs der Stimmen und einem
 `MANIFEST.sha256`. **Veröffentliche es nicht** (zugangsbeschränkte Gewichte).
 
 ## 0. Voraussetzungen
@@ -21,8 +21,8 @@ WORKDIR /work
 git clone https://github.com/netai369/PocketTTS.cpp-multilingual && cd PocketTTS.cpp-multilingual && git checkout 3ed176a
 docker run --rm -e HF_TOKEN -e HF_HOME=/hf -v $PWD:/work -v hf-cache:/hf IMAGE python export_onnx.py --language german --output-dir /work/models_de
 ```
-Ergebnis in `models_de/`: `*_int8.onnx`, `mimi_encoder.onnx`, `text_conditioner.onnx`, `tokenizer.model` (die INT8-Prüfung des
-Exporters kann beim EOS-Logit anschlagen; die tatsächlichen Ausgaben wurden ohne Abbrüche getestet).
+Ergebnis in `models_de/`: `*_int8.onnx`, die FP32-Varianten (`flow_lm_main.onnx` wird gebraucht), `mimi_encoder.onnx`, `text_conditioner.onnx`, `tokenizer.model` (die INT8-Prüfung des
+Exporters schlägt beim EOS-Logit an – das INT8-Hauptmodell verschluckt messbar Wörter, deshalb nutzt die App ab 1.0.2 `flow_lm_main.onnx` in FP32).
 
 ## 2. `bos_before_voice.npy`
 Der Exporter schreibt die Datei nicht. Sie stammt aus dem Gewicht `flow_lm.bos_before_voice` (`models_de/.cache/tts_german.safetensors`):
@@ -47,6 +47,6 @@ for v in ["juergen", "bill_boerst", "charles", "daan", "george", "giovanni", "mi
 ```
 
 ## 4. Paket schnüren
-Ordner `models_de/` (nur die in `REQUIRED` von `importer.py` genannten sieben Dateien) und `voices_de/*.wav` anlegen, dann
+Ordner `models_de/` (die sieben in `REQUIRED` von `importer.py` genannten Dateien plus `flow_lm_main.onnx`) und `voices_de/*.wav` anlegen, dann
 `tools/make_model_pack.sh <quellordner> <ausgabeordner>` (erzeugt `pockettts-model-pack.tar.gz` mit `MANIFEST.sha256`).
 Zum Import siehe `pockettts_local_int8/DOCS.md`, Abschnitt 3.

@@ -4,10 +4,10 @@
 set -euo pipefail
 SRC=${1:?Quellordner mit models_de/ und voices_de/}; OUT=${2:-./dist}; W=$(mktemp -d); trap 'rm -rf $W' EXIT
 mkdir -p $W/models_de $W/voices_de "$OUT"
-for f in flow_lm_flow_int8.onnx flow_lm_main_int8.onnx mimi_decoder_int8.onnx mimi_encoder.onnx text_conditioner.onnx tokenizer.model bos_before_voice.npy; do cp "$SRC/models_de/$f" $W/models_de/; done
+for f in flow_lm_flow_int8.onnx flow_lm_main_int8.onnx flow_lm_main.onnx mimi_decoder_int8.onnx mimi_encoder.onnx text_conditioner.onnx tokenizer.model bos_before_voice.npy; do cp "$SRC/models_de/$f" $W/models_de/; done
 cp "$SRC"/voices_de/*.wav $W/voices_de/
 cat > $W/models_de/NOTICE.txt <<'TXT'
-PocketTTS German model pack (INT8 ONNX export) for the "PocketTTS Local INT8" Home Assistant app.
+PocketTTS German model pack (ONNX export: INT8 models + FP32 flow_lm_main, pack format 2 / app >= 1.0.2) for the "PocketTTS Local INT8" Home Assistant app.
 Source model: kyutai/pocket-tts (package "german"), CC-BY-4.0, access-gated on Hugging Face (acceptance by the account holder required).
 Exported with kyutai-labs/pocket-tts v2.1.0 exporter from netai369/PocketTTS.cpp-multilingual @ 3ed176a; bos_before_voice.npy taken from flow_lm.bos_before_voice.
 Reference WAVs in voices_de/ were synthesized with the official PyTorch model and the official voice states of the same bundle.
