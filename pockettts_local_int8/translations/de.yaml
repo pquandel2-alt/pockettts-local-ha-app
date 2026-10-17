@@ -47,6 +47,9 @@ configuration:
   sound_profile:
     name: Klangprofil
     description: "Korrigiert den dumpfen Klang von PocketTTS (zu viel Dröhnen unter 100 Hz, zu wenig Präsenz bei 1-3 kHz). klar = an klare Sprachausgaben angeglichen, oben etwas heller (im Hörtest bevorzugt). weich = gleiche Korrektur, Höhen etwas zurückhaltender. aus = keine Klangkorrektur."
+  level_speech:
+    name: Lautstärkeausgleich
+    description: Gleicht die Lautstärke über die ganze Antwort an. PocketTTS erzeugt jeden Satz mit eigenem Pegel und wird in langen Sätzen oft leiser ("mal laut, mal leise"). Langsam geregelt, ohne Pumpen; Gesamtlautstärke unverändert.
   log_level:
     name: Log-Level
     description: Ausführlichkeit der Logs. Gesprochene Texte werden nur bei "debug" protokolliert.

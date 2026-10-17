@@ -9,32 +9,44 @@ from wyoming.server import AsyncEventHandler, AsyncServer
 from wyoming.tts import Synthesize, SynthesizeChunk, SynthesizeStart, SynthesizeStop, SynthesizeStopped
 from . import importer
 from .engine import PORT as PT_PORT
-from .enhance import Enhancer
+from .enhance import Enhancer, Leveler
 from .german_norm import normalize
 from .ttsclient import TtsError, stream_pcm
 
 log = logging.getLogger("wyoming")
 RATE = 24000
 OUT_SAMPLES = 2048          # Samples je AudioChunk (~85 ms)
-TRIM_THRESH = 0.01          # fuehrende Stille bis ca. -40 dBFS entfernen
-PREROLL_MS = 30
-GAP_MS = 180                # Pause zwischen Saetzen im Streaming-Eingabemodus
+TRIM_THRESH = 0.004         # fuehrende Stille bis ca. -48 dBFS entfernen
+PREROLL_MS = 150            # leise Anlaute (f, s, h) nicht abschneiden: mit 30 ms wurden Satzanfaenge oft verschluckt
+GAP_MS = 60                 # Pause zwischen Saetzen (dazu kommen ca. 150 ms Vorlauf, s. PREROLL_MS)
 _ABBR = ["z. B.", "z.B.", "d. h.", "d.h.", "u. a.", "u.a.", "ca.", "Dr.", "Nr.", "bzw.", "evtl.", "ggf.", "usw.", "Prof.", "Hr.", "Fr.", "Std.", "Min.", "Sek."]
 
-def split_sentences(text):
-    t = text
+_QUOTES = str.maketrans("", "", "\u201e\u201c\u201d\u201a\u2018\"\u00ab\u00bb\u2039\u203a")
+_QUOTES_SP = str.maketrans("\u201e\u201c\u201d\u201a\u2018\"\u00ab\u00bb\u2039\u203a", " " * 10)
+_BREAK = r"(?<=[.!?])\s+(?=[^\sa-zäöüß])"  # kein Satzende vor kleingeschriebenem Wort ("am 18.10. um 9 Uhr")
+
+def prepare(text):
+    """Satzzeichen, an denen PocketTTS Fantasiesilben erzeugt oder lange Saetze abbricht: Anfuehrungszeichen entfernen,
+    Semikolon und Doppelpunkt vor einem neuen Satzteil zu Satzenden machen (kuerzere Abschnitte, natuerliche Pause)."""
+    t = text.translate(_QUOTES).replace("\u2019", "'")
+    t = re.sub(r"\s*;\s*(\S)", lambda m: ". " + m.group(1).upper(), t)
+    return re.sub(r"(?<=[^\d\s]):\s+(?=[A-ZÄÖÜ\d])", ". ", t)
+
+def _protect(t):
     for a in _ABBR: t = t.replace(a, a.replace(".", "\u2024"))
-    t = re.sub(r"(\d)\.(\s*\d)", "\\1\u2024\\2", t)
-    return [p.replace("\u2024", ".").strip() for p in re.split(r"(?<=[.!?])\s+(?=\S)", t.strip()) if p.strip()]
+    return re.sub(r"(\d)\.(\s*\d)", "\\1\u2024\\2", t)
+
+def split_sentences(text):
+    t = _protect(prepare(text))
+    return [p.replace("\u2024", ".").strip() for p in re.split(_BREAK, t.strip()) if p.strip()]
 
 def split_stream(buf):
     """Streaming-Eingabe: (vollstaendige Saetze, Rest). Der Rest bleibt unveraendert (inkl. Leerzeichen am Ende),
     damit Woerter ueber Chunk-Grenzen hinweg nicht zusammenfallen ("21 " + "Grad." -> "21 Grad.")."""
-    t = buf
-    for a in _ABBR: t = t.replace(a, a.replace(".", "\u2024"))
-    t = re.sub(r"(\d)\.(\s*\d)", "\\1\u2024\\2", t)
+    t = _protect(buf.translate(_QUOTES_SP).replace(";", "."))       # nur Ersetzungen gleicher Laenge: Positionen = buf
+    t = re.sub(r"(?<=[^\d\s]):(?=\s+[A-ZÄÖÜ\d])", ".", t)
     last = None
-    for m in re.finditer(r"(?<=[.!?])\s+(?=\S)", t): last = m
+    for m in re.finditer(_BREAK, t): last = m
     if last is None: return [], buf
     return split_sentences(buf[:last.start()]), buf[last.end():]
 
@@ -61,6 +73,7 @@ class Handler(_QuietDisconnect, AsyncEventHandler):
     def __init__(self, info, synth, *a, **kw):
         super().__init__(*a, **kw); self.info_event = info.event(); self.synth = synth; self.s = synth.s
         self.buf = ""; self.voice = synth.default_voice; self.streaming_in = False; self.started = False; self.error = None
+        self.lev = None                                        # Lautstaerkeausgleich ueber alle Saetze einer Antwort
 
     async def _emit(self, x):
         try:
@@ -76,7 +89,9 @@ class Handler(_QuietDisconnect, AsyncEventHandler):
         if not text: return
         if self.s.normalize_text: text = normalize(text)
         s = self.s; t0 = time.perf_counter(); first_out = None; total = 0; carry = b""; lead_done = False
-        pend = []; pend_n = 0; released = self.started and s.streaming; enh = Enhancer(s.volume_boost_db, s.sound_profile)
+        pend = []; pend_n = 0; released = self.started and s.streaming
+        if s.level_speech and self.lev is None: self.lev = Leveler()
+        enh = Enhancer(s.volume_boost_db, s.sound_profile, leveler=self.lev)
         prebuf = s.prebuffer_ms if s.streaming else 10**9
         async with self.synth.lock:
             self.synth.requests += 1
@@ -115,6 +130,7 @@ class Handler(_QuietDisconnect, AsyncEventHandler):
         log.info("Stimme %s: %d Zeichen -> %.1fs Audio, erster Chunk nach %.2fs, gesamt %.2fs", self.voice, len(text), total / RATE, first_out if first_out is not None else -1, time.perf_counter() - t0)
 
     async def _finish(self):
+        self.lev = None
         if self.error:                                         # Fehler melden statt den Client bis zum Timeout warten zu lassen
             err, self.error = self.error, None; self.started = False
             await self.write_event(Error(text=err, code="synthesis-failed").event()); return
@@ -134,7 +150,8 @@ class Handler(_QuietDisconnect, AsyncEventHandler):
         if Synthesize.is_type(event.type):
             if self.streaming_in: return True
             e = Synthesize.from_event(event); self.voice = self.synth.voice_ok(e.voice.name if e.voice else None)
-            await self._speak(e.text.strip(), gap_first=False); await self._finish(); return True
+            for i, sent in enumerate(split_sentences(e.text)): await self._speak(sent, gap_first=i > 0)
+            await self._finish(); return True
         if SynthesizeStart.is_type(event.type):
             e = SynthesizeStart.from_event(event); self.voice = self.synth.voice_ok(e.voice.name if e.voice else None); self.streaming_in = True; self.buf = ""; return True
         if SynthesizeChunk.is_type(event.type):

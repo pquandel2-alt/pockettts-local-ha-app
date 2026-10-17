@@ -28,6 +28,7 @@ class Settings:
     temperature: float = 0.7
     volume_boost_db: int = 8
     sound_profile: str = "klar"
+    level_speech: bool = True
     log_level: str = "info"
     import_url: str = ""
     import_sha256: str = ""
@@ -79,6 +80,7 @@ def parse(o: dict) -> Settings:
         normalize_text=_bool(o, "normalize_text", d.normalize_text), ort_spinning=_bool(o, "ort_spinning", d.ort_spinning),
         temperature=_float(o, "temperature", 0.1, 1.0, d.temperature),
         volume_boost_db=_int(o, "volume_boost_db", 0, 20, d.volume_boost_db), sound_profile=sound_profile,
+        level_speech=_bool(o, "level_speech", d.level_speech),
         log_level=level, import_url=str(o.get("import_url") or ""), import_sha256=str(o.get("import_sha256") or "").lower(),
     )
     if s.max_chunk < s.first_chunk:

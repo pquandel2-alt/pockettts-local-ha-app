@@ -93,6 +93,7 @@ Konfigurationsordner unter `voices/`. Sie werden beim Start übernommen. Beachte
 | `temperature` | `0.7` | Zufälligkeit der Stimmerzeugung (0,1–1,0). 0,3 und 0,5 brachten keinen messbaren Vorteil. |
 | `volume_boost_db` | `8` | Verstärkung in dB (0–20) mit weichem Begrenzer. PocketTTS ist von sich aus leise (ca. −26 dBFS); 8 dB ergeben übliche ca. −19 dBFS. 0 = aus. |
 | `sound_profile` | `klar` | Klangkorrektur gegen den dumpfen Klang: PocketTTS hat gut 10 dB zu viel Dröhnen unter 100 Hz und ca. 8 dB zu wenig Präsenz bei 1,6–3 kHz (gemessen gegen Supertonic/Piper). `klar` gleicht das an und ist oben etwas heller (im Hörtest bevorzugt), `weich` mit zurückhaltenderen Höhen, `aus` ohne Korrektur. Gilt für alle Stimmen gleich (alle haben dasselbe Spektrum). |
+| `level_speech` | `true` | Lautstärkeausgleich über die ganze Antwort: PocketTTS erzeugt jeden Satz mit eigenem Pegel (gemessen bis ca. 5 dB Unterschied) und wird in langen Sätzen oft leiser. Langsam geregelt (ca. 0,5 s), Pausen halten den Pegel; die Gesamtlautstärke bleibt gleich. |
 | `log_level` | `info` | `debug` zeigt auch die gesprochenen Texte. |
 | `import_url`, `import_sha256` | – | Einmaliger Modellimport per LAN-Link (nach dem Eintragen App neu starten). |
 
@@ -162,6 +163,8 @@ mehr Flow-Schritte, spätere EOS-Erkennung oder das Aufteilen an Kommas brachten
 | App läuft, aber in Home Assistant keine Stimmen | Integration neu laden; Log prüfen (Healthcheck/Stimmen). |
 | Erste Antwort nach dem Start langsam | Warmup abwarten (Log „Warmup …“); `warmup` und `preload_voices` aktiv lassen. |
 | Kurze Aussetzer bei Satelliten | `prebuffer_ms` auf 250–400 erhöhen. |
+| Mal laut, mal leise | `level_speech` aktiv lassen (Standard). |
+| Titel in Anführungszeichen / Aufzählungen mit „;“ werden verschluckt | Ab 1.0.5 behoben: Anführungszeichen werden entfernt, „;“ und „:“ trennen Satzteile, auch bei Anfragen ohne Streaming wird satzweise erzeugt. |
 | Zu leise / dumpf | `volume_boost_db` erhöhen (z. B. 10–12); `sound_profile` auf `klar`. Klingt es zu scharf: `weich`. Verzerrt: `volume_boost_db` senken. |
 
 ## 12. Updates und Backup

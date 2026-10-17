@@ -47,6 +47,9 @@ configuration:
   sound_profile:
     name: Sound profile
     description: "Corrects the muffled sound of PocketTTS (too much boom below 100 Hz, too little presence at 1-3 kHz). klar = matched to clear TTS voices, slightly brighter on top (preferred in listening test). weich = same correction with gentler treble. aus = no tone correction."
+  level_speech:
+    name: Loudness leveling
+    description: Evens out the loudness across the whole answer. PocketTTS renders every sentence at its own level and often gets quieter within long sentences. Slow regulation without pumping; overall loudness unchanged.
   log_level:
     name: Log level
     description: Log verbosity. Spoken texts are only logged at "debug".

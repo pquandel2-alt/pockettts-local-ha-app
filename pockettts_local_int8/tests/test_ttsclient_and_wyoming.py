@@ -78,7 +78,7 @@ class Flow(unittest.IsolatedAsyncioTestCase):
             await c.write_event(Synthesize(text="Es ist 18 Uhr 35.", voice=SynthesizeVoice(name="paul")).event()); types, pcm, first = await self.collect(c)
         self.assertEqual(types[0], "audio-start"); self.assertEqual(types[-1], "audio-stop")
         x = np.frombuffer(pcm, "<i2") / 32768.0
-        self.assertLess(len(x) / RATE, 0.75)                      # 0,4 s Stille abgeschnitten (nur ca. 30 ms Vorlauf bleiben)
+        self.assertLess(len(x) / RATE, 0.75)                      # 0,4 s Stille abgeschnitten (nur ca. 150 ms Vorlauf bleiben)
         self.assertGreater(np.abs(x[: RATE // 20]).max(), 0.05)   # der erste Chunk ist hoerbar, keine Stille
         self.assertEqual(self.fake.requests[-1]["voice"], "paul.wav"); self.assertEqual(self.fake.requests[-1]["text"], "Es ist achtzehn Uhr fünfunddreißig.")
 
@@ -168,6 +168,15 @@ class Flow(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(wyoming_server.split_stream("Das ist z. B. gut"), ([], "Das ist z. B. gut"))
         self.assertEqual(wyoming_server.split_stream("A. B! C? Rest "), (["A.", "B!", "C?"], "Rest "))
         self.assertEqual(wyoming_server.split_stream("Satz eins. "), ([], "Satz eins. "))
+
+    def test_split_handles_quotes_semicolons_and_dates(self):
+        t = "Ich habe 2 Termine gefunden: \u201eFriseur\u201c am 18.10. um 09:00 Uhr; \u201eTeverner Heide\u201c am 18.10. um 14:00 Uhr."
+        want = ["Ich habe 2 Termine gefunden.", "Friseur am 18.10. um 09:00 Uhr.", "Teverner Heide am 18.10. um 14:00 Uhr."]
+        self.assertEqual(wyoming_server.split_sentences(t), want)
+        self.assertEqual(wyoming_server.split_stream(t + " Weiter "), (want, "Weiter "))
+        self.assertEqual(wyoming_server.split_sentences("Die Haust\u00fcr ist zu; die Garage ist offen."), ["Die Haust\u00fcr ist zu.", "Die Garage ist offen."])
+        self.assertEqual(wyoming_server.split_sentences("Es ist 18:35 Uhr."), ["Es ist 18:35 Uhr."])
+        self.assertEqual(wyoming_server.split_stream("Termin am 18.10. um "), ([], "Termin am 18.10. um "))
 
     def test_split_sentences_protects_abbreviations(self):
         self.assertEqual(wyoming_server.split_sentences("Das ist z. B. gut. Nr. 5 ist 12. Aber ja!"), ["Das ist z. B. gut.", "Nr. 5 ist 12.", "Aber ja!"])

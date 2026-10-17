@@ -26,13 +26,13 @@ def normalize(text: str) -> str:
     for pat, rep in _ABK: t = re.sub(pat, rep, t)
     # Uhrzeit "18 Uhr 35", "18:35 Uhr", "18:35", "9 Uhr 05"
     def clock(h, m): 
-        h, m = int(h), int(m); return f"{_n(h)} Uhr" + (f" {_n(m)}" if m else "")
+        h, m = int(h), int(m); return f"{'ein' if h == 1 else _n(h)} Uhr" + (f" {_n(m)}" if m else "")
     t = re.sub(r"\b([01]?\d|2[0-3])\s*Uhr\s*([0-5]\d)\b", lambda m: clock(m.group(1), m.group(2)), t)
     t = re.sub(r"\b([01]?\d|2[0-3]):([0-5]\d)(?:\s*Uhr)?\b", lambda m: clock(m.group(1), m.group(2)), t)
     # Zahl + Einheit (auch Dezimalzahlen)
     for pat, rep in UNITS:
         t = re.sub(r"(\d+,\d+)" + pat, lambda m, r=rep: _dec(m.group(1)) + r, t)
-        t = re.sub(r"(\d+)" + pat, lambda m, r=rep: _n(m.group(1)) + r, t)
+        t = re.sub(r"(\d+)" + pat, lambda m, r=rep: ("ein" if m.group(1) == "1" else _n(m.group(1))) + r, t)
     # Datum 14.05.2026 / 14.05.
     mon = ["", "Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
     def date(m):
@@ -45,5 +45,7 @@ def normalize(text: str) -> str:
     # Dezimalzahlen, dann ganze Zahlen (inkl. Tausenderpunkt "1.250")
     t = re.sub(r"\b(\d+,\d+)\b", lambda m: _dec(m.group(1)), t)
     t = re.sub(r"\b(\d{1,3}(?:\.\d{3})+)\b", lambda m: _n(m.group(1).replace(".", "")), t)
+    t = re.sub(r"(?i)\b(habe|hast|hat|haben|habt|gibt es|finde|fand)\s+1\s+(Termin|Eintrag|Kalendereintrag|Alarm|Timer|Wecker)\b", r"\1 einen \2", t)
+    t = re.sub(r"\b1\b(?=\s+[A-ZÄÖÜ][a-zäöüß])", "ein", t)          # "1 Termin" -> "ein Termin" (nicht "eins Termin")
     t = re.sub(r"\b(\d+)\b", lambda m: _n(m.group(1)), t)
     return re.sub(r"[ \t]+", " ", t).strip()

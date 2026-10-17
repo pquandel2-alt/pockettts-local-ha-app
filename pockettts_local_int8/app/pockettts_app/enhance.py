@@ -22,12 +22,12 @@ def curve_fir(gains_db, freqs=CURVE_HZ, taps=TAPS, rate=RATE):
 _FIR = {}
 
 class Enhancer:
-    def __init__(self, gain_db=0, profile="aus", limit=0.85):
-        self.gain = float(10 ** (gain_db / 20)); self.limit = limit
+    def __init__(self, gain_db=0, profile="aus", limit=0.85, leveler=None):
+        self.gain = float(10 ** (gain_db / 20)); self.limit = limit; self.lev = leveler
         if PROFILES.get(profile) is not None and profile not in _FIR: _FIR[profile] = curve_fir(PROFILES[profile])
         self.h = _FIR.get(profile) if PROFILES.get(profile) is not None else None
         self.tail = np.zeros(TAPS - 1, np.float32)
-        self.active = bool(gain_db) or self.h is not None
+        self.active = bool(gain_db) or self.h is not None or leveler is not None
 
     def process(self, x):
         x = np.asarray(x, np.float32)
@@ -35,6 +35,7 @@ class Enhancer:
         if self.h is not None:
             buf = np.concatenate([self.tail, x]); self.tail = buf[-(TAPS - 1):]
             x = np.convolve(buf, self.h, mode="valid").astype(np.float32)
+        if self.lev is not None: x = self.lev.process(x)
         y = x * self.gain; t = self.limit; a = np.abs(y); over = a > t
         if over.any(): y[over] = np.sign(y[over]) * (t + (1 - t) * np.tanh((a[over] - t) / (1 - t)))
         return y
@@ -42,3 +43,27 @@ class Enhancer:
     def flush(self):
         """Rest des Filters (halbe Filterlaenge) am Satzende."""
         return self.process(np.zeros((TAPS - 1) // 2, np.float32)) if self.h is not None else np.zeros(0, np.float32)
+
+class Leveler:
+    """Langsamer Lautstaerkeausgleich ueber eine ganze Antwort: PocketTTS erzeugt jeden Satz mit eigenem Pegel (gemessen bis
+    ca. 5 dB Unterschied) und wird innerhalb langer Saetze oft leiser. Kausal (Streaming), 10-ms-Bloecke; nur stimmhafte
+    Bloecke zaehlen, Pausen halten die Verstaerkung (kein Hochziehen von Rauschen). Wirkt nach der Klangkorrektur, vor Verstaerkung
+    und Limiter; das Ziel entspricht dem bisherigen mittleren Sprachpegel (Gesamtlautstaerke unveraendert)."""
+    BLOCK = RATE // 100
+
+    def __init__(self, target_db=-29.5, tau_ms=500, strength=0.8, max_db=6.0, gate_db=-50.0):
+        self.t = target_db; self.k = strength; self.max = max_db; self.gate = 10 ** (gate_db / 10)
+        self.a = 1 - np.exp(-1000 / RATE * self.BLOCK / tau_ms); self.ms = None; self.g = 1.0; self.voiced = 0
+
+    def process(self, x):
+        x = np.asarray(x, np.float32); out = np.empty_like(x)
+        for i in range(0, len(x), self.BLOCK):
+            b = x[i:i + self.BLOCK]; p = float(np.mean(b * b))
+            if p > self.gate:
+                self.voiced += 1; a = max(self.a, 1 / self.voiced)              # Anfang: schnell einschwingen (Mittelwert)
+                self.ms = p if self.ms is None else self.ms + a * (p - self.ms)
+            g = self.g
+            if self.ms is not None and self.voiced >= 20:                       # erst nach 200 ms Sprache regeln
+                d = np.clip(self.k * (self.t - 10 * np.log10(self.ms)), -self.max, self.max); g = float(10 ** (d / 20))
+            out[i:i + len(b)] = b * np.linspace(self.g, g, len(b), endpoint=False, dtype=np.float32); self.g = g
+        return out

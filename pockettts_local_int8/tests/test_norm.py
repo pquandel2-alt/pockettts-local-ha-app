@@ -13,6 +13,12 @@ CASES = {
  "Das ist z. B. wichtig.": "Das ist zum Beispiel wichtig.",
  "Am 14.05.2026 kommt Besuch.": "Am vierzehnten Mai zweitausendsechsundzwanzig kommt Besuch.",
  "Die Waschmaschine ist fertig.": "Die Waschmaschine ist fertig.",
+ "Ich habe 1 Termin gefunden.": "Ich habe einen Termin gefunden.",
+ "Noch 1 Fenster ist offen.": "Noch ein Fenster ist offen.",
+ "Der Wecker klingelt um 1:15 Uhr.": "Der Wecker klingelt um ein Uhr fünfzehn.",
+ "am 18.10. um 09:00 Uhr": "am achtzehnten Oktober um neun Uhr",
+ "Es ist 1 Grad kalt.": "Es ist ein Grad kalt.",
+ "Draußen ist es 1 °C.": "Draußen ist es ein Grad Celsius.",
 }
 UNCHANGED = [   # normale Saetze duerfen nicht veraendert werden
  "Guten Morgen! Schön, dass du da bist.", "Welche Fenster sind aktuell geöffnet?", "Hallo, wie geht's dir?",

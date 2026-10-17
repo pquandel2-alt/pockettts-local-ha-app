@@ -2,6 +2,27 @@
 
 Alle nennenswerten Änderungen dieser App. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [1.0.5] - 2026-10-17
+
+### Behoben
+- **Verschluckte Termine und Fantasiesilben bei Kalender-Antworten** (z. B. „Ich habe 2 Termine gefunden: „Friseur …“ am 18.10. um
+  09:00 Uhr; „…“ am 18.10. um 14:00 Uhr.“):
+  - Anfragen ohne Streaming wurden als ein einziger langer Block erzeugt; PocketTTS brach dabei oft ab – der letzte Termin fehlte
+    in 8 von 12 Durchläufen. Jetzt wird immer satzweise erzeugt (12/12 vollständig).
+  - Deutsche Anführungszeichen („…“, »…«) erzeugten vor Titeln Fantasiesilben („Ruh-“, „Duria“); sie werden entfernt.
+  - „;“ und „:“ vor einem neuen Satzteil trennen jetzt Sätze (kürzere Abschnitte, natürliche Pause).
+  - Kein Satzende mehr nach einem Datum („am 18.10. um 9 Uhr“ wurde in Stücke zerrissen, jedes mit eigener Lautstärke).
+  - Gemessen (Whisper-Rückerkennung, Kalender-Antworten): Schlüsselwörter richtig von ca. 75 % auf ca. 92 % (Streaming) bzw.
+    von 52 % auf 90 % (ohne Streaming); 12 Standard-Assist-Antworten: verschluckte Wörter 0,6 % → 0 %.
+- **Abgeschnittene Satzanfänge:** Das Entfernen der führenden Stille schnitt leise Anlaute (f, s, h) ab („Friseur“ → „Riseur“).
+  Schwelle −48 statt −40 dBFS, 150 ms Vorlauf statt 30 ms; die Pause zwischen Sätzen bleibt gleich lang.
+- „1 Termin“ → „einen Termin“ statt „eines Termin“; „1 Fenster“ → „ein Fenster“, „1:15 Uhr“ → „ein Uhr fünfzehn“, „1 °C“ → „ein Grad“.
+
+### Hinzugefügt
+- **Lautstärkeausgleich** `level_speech` (Standard an): gleicht den Pegel über die ganze Antwort an (langsam, Pausen halten den
+  Pegel, ±6 dB). Schwankung des Sprachpegels bei mehrteiligen Antworten von ca. 5,6 auf 4,3 dB; Gesamtlautstärke unverändert.
+- 53 automatisierte Tests.
+
 ## [1.0.4] - 2026-10-16
 
 ### Geändert
