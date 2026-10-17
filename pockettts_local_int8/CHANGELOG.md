@@ -2,6 +2,17 @@
 
 Alle nennenswerten Änderungen dieser App. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [1.0.6] - 2026-10-17
+
+### Geändert
+- **Standardstimme ist jetzt `george`** (bisher `juergen`). Im Blindtest gegen Supertonic-3, Kokoro und Piper mit acht typischen
+  Assist-Antworten bevorzugt. Gemessen (Whisper-Rückerkennung): Wortfehler 1,4 % statt 2,0 % (12 Standard-Antworten), Schlüsselwörter
+  in Kalender-Antworten 105/112 statt 102/112; keine verschluckten Wörter.
+- Wichtig: Wählt die Assist-Pipeline ausdrücklich eine Stimme (z. B. `juergen`), gilt diese. Zum Wechseln in Home Assistant unter
+  *Einstellungen → Sprachassistenten → Pipeline → Text-zu-Sprache* die Stimme auf `george` stellen. Eine bereits gespeicherte
+  Option `default_voice` bleibt unverändert.
+- `temperature` bleibt 0,7 (0,5 brachte mit `george` mehr Fehler: 3,1 % statt 1,4 %).
+
 ## [1.0.5] - 2026-10-17
 
 ### Behoben

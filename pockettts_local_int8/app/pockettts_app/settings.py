@@ -13,7 +13,7 @@ class SettingsError(ValueError):
 @dataclass(frozen=True)
 class Settings:
     language: str = "de"
-    default_voice: str = "juergen"
+    default_voice: str = "george"
     threads: int = 3
     main_model: str = "fp32"
     streaming: bool = True

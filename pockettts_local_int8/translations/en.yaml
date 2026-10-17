@@ -4,7 +4,7 @@ configuration:
     description: Speech language. The bundled German model supports "de" only.
   default_voice:
     name: Default voice
-    description: Voice used when Home Assistant does not request a specific one (default juergen). All voices appear in the Assist voice picker.
+    description: Voice used when Home Assistant does not request a specific one (default george, preferred in a blind listening test). All voices appear in the Assist voice picker.
   threads:
     name: CPU threads
     description: Total ONNX Runtime thread budget. With the FP32 main model 3 is the measured sweet spot (2 is enough for INT8). Nearly 0 % CPU when idle.

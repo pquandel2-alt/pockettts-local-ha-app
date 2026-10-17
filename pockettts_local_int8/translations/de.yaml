@@ -4,7 +4,7 @@ configuration:
     description: Sprache der Ausgabe. Das mitgelieferte deutsche Modell unterstützt nur "de".
   default_voice:
     name: Standardstimme
-    description: Stimme, wenn Home Assistant keine bestimmte anfordert (Standard juergen). Alle Stimmen erscheinen in der Stimmenauswahl von Assist.
+    description: Stimme, wenn Home Assistant keine bestimmte anfordert (Standard george, im Blindtest bevorzugt). Alle Stimmen erscheinen in der Stimmenauswahl von Assist.
   threads:
     name: CPU-Threads
     description: Gesamtbudget an ONNX-Runtime-Threads. Mit FP32-Hauptmodell sind 3 der gemessene beste Kompromiss (mit INT8 reichen 2). Im Leerlauf fast 0 % CPU.

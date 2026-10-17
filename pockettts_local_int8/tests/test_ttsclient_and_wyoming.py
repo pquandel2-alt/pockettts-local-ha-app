@@ -41,7 +41,7 @@ class Flow(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         importer.VOICES = f"{_d}/voices_de"     # unabhaengig von anderen Tests (Importer-Tests laden das Modul neu)
         self.fake = FakeEngine(); self.srv = await asyncio.start_server(self.fake.handle, "127.0.0.1", 18092)
-        self.s = cfg.Settings(prebuffer_ms=150)
+        self.s = cfg.Settings(prebuffer_ms=150, default_voice="juergen")
         self.synth, server, factory = await wyoming_server.serve(self.s, "tcp://127.0.0.1:0", "test")
         self.info = wyoming_server.build_info(self.s, "test")
         # eigenen Port waehlen
@@ -139,7 +139,7 @@ class Flow(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(ev.type, "error")
 
     async def test_non_streaming_mode_sends_one_block_after_completion(self):
-        self.s2 = cfg.Settings(streaming=False); synth, _, factory = await wyoming_server.serve(self.s2, "tcp://127.0.0.1:0", "t")
+        self.s2 = cfg.Settings(streaming=False, default_voice="juergen"); synth, _, factory = await wyoming_server.serve(self.s2, "tcp://127.0.0.1:0", "t")
         t = asyncio.create_task(wyoming_server.AsyncServer.from_uri("tcp://127.0.0.1:18303").run(factory)); await asyncio.sleep(0.2)
         try:
             async with AsyncClient.from_uri("tcp://127.0.0.1:18303") as c:

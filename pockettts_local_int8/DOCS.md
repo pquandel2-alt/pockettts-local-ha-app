@@ -63,11 +63,11 @@ Beim LAN-Link nach dem Eintragen die App einmal neu starten.
   funktioniert dann weiter intern.)
 - **Test-Pipeline (ändert deine produktive Pipeline nicht):** *Einstellungen → Sprachassistenten → Assistent hinzufügen*,
   Name z. B. „Assist – PocketTTS Test“. Spracherkennung, Konversationsagent und Wake Word wie in deiner Pipeline wählen,
-  bei **Text-to-Speech** „pockettts-local-int8“, Sprache **Deutsch**, Stimme z. B. **juergen**. Die bestehende Edge-TTS bleibt unberührt.
+  bei **Text-to-Speech** „pockettts-local-int8“, Sprache **Deutsch**, Stimme z. B. **george**. Die bestehende Edge-TTS bleibt unberührt.
 
 ## 5. Stimmen
 
-`juergen` (Standard), `bill_boerst`, `charles`, `daan`, `george`, `giovanni`, `michael`, `paul`, `peter_yearsley`, `rafael`,
+`george` (Standard, im Blindtest bevorzugt), `juergen`, `bill_boerst`, `charles`, `daan`, `giovanni`, `michael`, `paul`, `peter_yearsley`, `rafael`,
 `stuart_bell` – alle erscheinen in der Stimmenauswahl. Die C++-Engine klont jede Stimme aus einer Referenz-WAV; die
 Stimm- und KV-Caches (`/data/voices_de/.cache`) hängen vom **Inhalt** der WAV und der Modelldateien ab und aktualisieren sich
 deshalb zuverlässig, sobald sich eine Stimme ändert. *Eigene Stimmen:* Lege WAV-Dateien (mono, ca. 5–15 s) in den
@@ -79,7 +79,7 @@ Konfigurationsordner unter `voices/`. Sie werden beim Start übernommen. Beachte
 | Option | Standard | Wirkung |
 |---|---|---|
 | `language` | `de` | Das deutsche Paket unterstützt nur `de`. |
-| `default_voice` | `juergen` | Stimme, wenn Home Assistant keine anfordert. |
+| `default_voice` | `george` | Stimme, wenn Home Assistant keine anfordert. Wählt die Assist-Pipeline eine Stimme aus, gilt diese – zum Wechseln die Stimme in der Pipeline umstellen. |
 | `threads` | `3` | ONNX-Runtime-Threads. Mit FP32-Hauptmodell ist 3 der gemessene Kompromiss, mit INT8 reichen 2. Bestehende Installationen behalten ihren Wert – nach dem Update auf 3 stellen. |
 | `main_model` | `fp32` | Hauptmodell (`flow_lm_main`) in `fp32` (deutlich verständlicher) oder `int8` (schneller, verschluckt öfter Wörter). `fp32` braucht das Modellpaket ab 1.0.2, sonst wird `int8` genutzt. |
 | `streaming` | `true` | Audio während der Erzeugung senden. Aus: erst komplett erzeugen, dann senden. |

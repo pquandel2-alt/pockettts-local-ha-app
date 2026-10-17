@@ -4,7 +4,7 @@ from pockettts_app import settings as cfg
 class Settings(unittest.TestCase):
     def test_defaults_match_measured_optimum(self):
         s = cfg.parse({})
-        self.assertEqual((s.threads, s.main_model, s.first_chunk, s.max_chunk, s.prebuffer_ms, s.lead_in_ms, s.default_voice), (3, "fp32", 2, 4, 150, 0, "juergen"))
+        self.assertEqual((s.threads, s.main_model, s.first_chunk, s.max_chunk, s.prebuffer_ms, s.lead_in_ms, s.default_voice), (3, "fp32", 2, 4, 150, 0, "george"))
         self.assertTrue(s.streaming and s.warmup and s.normalize_text); self.assertFalse(s.ort_spinning)
         self.assertEqual((s.volume_boost_db, s.sound_profile), (8, "klar"))
     def test_invalid_values(self):
