@@ -21,12 +21,13 @@ PREROLL_MS = 150            # leise Anlaute (f, s, h) nicht abschneiden: mit 30 
 GAP_MS = 60                 # Pause zwischen Saetzen (dazu kommen ca. 150 ms Vorlauf, s. PREROLL_MS)
 _ABBR = ["z. B.", "z.B.", "d. h.", "d.h.", "u. a.", "u.a.", "ca.", "Dr.", "Nr.", "bzw.", "evtl.", "ggf.", "usw.", "Prof.", "Hr.", "Fr.", "Std.", "Min.", "Sek."]
 
-_QUOTES = str.maketrans("", "", "\u201e\u201c\u201d\u201a\u2018\"\u00ab\u00bb\u2039\u203a")
-_QUOTES_SP = str.maketrans("\u201e\u201c\u201d\u201a\u2018\"\u00ab\u00bb\u2039\u203a", " " * 10)
+_DROP = "\u201e\u201c\u201d\u201a\u2018\"\u00ab\u00bb\u2039\u203a()[]"   # wie replace_characters in pocket-tts v3.3.0 (german.yaml)
+_QUOTES = str.maketrans("", "", _DROP)
+_QUOTES_SP = str.maketrans(_DROP, " " * len(_DROP))
 _BREAK = r"(?<=[.!?])\s+(?=[^\sa-zäöüß])"  # kein Satzende vor kleingeschriebenem Wort ("am 18.10. um 9 Uhr")
 
 def prepare(text):
-    """Satzzeichen, an denen PocketTTS Fantasiesilben erzeugt oder lange Saetze abbricht: Anfuehrungszeichen entfernen,
+    """Satzzeichen, an denen PocketTTS Fantasiesilben erzeugt oder lange Saetze abbricht: Anfuehrungszeichen und Klammern entfernen,
     Semikolon und Doppelpunkt vor einem neuen Satzteil zu Satzenden machen (kuerzere Abschnitte, natuerliche Pause)."""
     t = text.translate(_QUOTES).replace("\u2019", "'")
     t = re.sub(r"\s*;\s*(\S)", lambda m: ". " + m.group(1).upper(), t)

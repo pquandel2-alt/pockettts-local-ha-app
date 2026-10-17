@@ -2,6 +2,21 @@
 
 Alle nennenswerten Änderungen dieser App. Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [1.0.7] - 2026-10-17
+
+### Behoben
+- **Verschluckte Wörter am Satzanfang:** Die Engine beendete einen Satz manchmal schon in den ersten Frames, bevor das erste Wort
+  gesprochen war (der Satzende-Wert mancher Stimmen springt dort kurz über die Schwelle). Wie in pocket-tts v3.2.0 wird ein
+  Satzende in den ersten 6 Frames jetzt ignoriert (Engine-Patch `0004-ignore-eos-in-first-frames.patch`).
+  Gemessen mit `george` (Whisper-Rückerkennung): Wortfehler 4,0 % → 2,0 % (36 Antworten), Schlüsselwörter in
+  Kalender-Antworten 78/84 → 83/84; Bestätigungslauf mit 72 Antworten: 1,6 % Wortfehler, 84/84 Schlüsselwörter, keine verschluckten Wörter.
+- Klammern `( ) [ ]` werden vor der Synthese entfernt (wie die Textaufbereitung von pocket-tts v3.3.0 für Deutsch).
+
+### Geprüft, nicht übernommen
+- Temperatur 0,3 (neuer Standard von pocket-tts v3.3.0): mit `george` nicht besser (2,7 % statt 1,6 % Wortfehler) – bleibt 0,7.
+- Kürzere Stimmprobe (5 s statt ca. 9 s): kein messbarer Unterschied.
+- Die App nutzt bereits die neuesten deutschen Gewichte von Kyutai (Stand 1. Oktober 2026); ein neues Modellpaket ist nicht nötig.
+
 ## [1.0.6] - 2026-10-17
 
 ### Geändert

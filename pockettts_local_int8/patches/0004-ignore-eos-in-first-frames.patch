@@ -1,0 +1,15 @@
+diff --git a/pocket_tts.cpp b/pocket_tts.cpp
+index d5b09a8..99a5b79 100644
+--- a/pocket_tts.cpp
++++ b/pocket_tts.cpp
+@@ -2170,7 +2170,9 @@ private:
+                 eos_logit = outputs[1].GetTensorData<float>()[0];
+             }
+             
+-            if (!eos_ && eos_logit > tts.cfg_.eos_threshold) {
++            // Local patch (like pocket-tts v3.2.0 _MIN_FRAMES_BEFORE_EOS): before speech starts, the EOS logit of
++            // some voices can cross the threshold, and a short text then ends before the word is spoken.
++            if (!eos_ && idx_ >= 6 && eos_logit > tts.cfg_.eos_threshold) {
+                 eos_ = true;
+                 eos_frame_ = idx_;
+             }

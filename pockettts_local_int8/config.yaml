@@ -1,6 +1,6 @@
 ---
 name: PocketTTS Local INT8
-version: "1.0.6"
+version: "1.0.7"
 slug: pockettts_local_int8
 description: >-
   High-performance offline German Text-to-Speech for Home Assistant using PocketTTS C++,

@@ -177,6 +177,7 @@ class Flow(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(wyoming_server.split_sentences("Die Haust\u00fcr ist zu; die Garage ist offen."), ["Die Haust\u00fcr ist zu.", "Die Garage ist offen."])
         self.assertEqual(wyoming_server.split_sentences("Es ist 18:35 Uhr."), ["Es ist 18:35 Uhr."])
         self.assertEqual(wyoming_server.split_stream("Termin am 18.10. um "), ([], "Termin am 18.10. um "))
+        self.assertEqual(wyoming_server.split_sentences("Der Termin (Zahnarzt) ist [heute]."), ["Der Termin Zahnarzt ist heute."])
 
     def test_split_sentences_protects_abbreviations(self):
         self.assertEqual(wyoming_server.split_sentences("Das ist z. B. gut. Nr. 5 ist 12. Aber ja!"), ["Das ist z. B. gut.", "Nr. 5 ist 12.", "Aber ja!"])
